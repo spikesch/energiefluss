@@ -41,16 +41,32 @@ def to_watts(state: str | None, unit: str | None) -> float | None:
 
 @dataclass
 class BatteryInput:
-    """One battery's raw readings (power already in W, sign as configured)."""
+    """One battery's readings in W.
 
-    power: float | None
-    soc: float | None
+    Either combined (one signed sensor, ``invert`` flips its sign) or split
+    (``split=True``: separate charge and discharge sensors, both positive).
+    ``measured=False`` means no power sensor is configured at all; the power
+    may then be derived from the energy balance.
+    """
+
+    power: float | None = None
+    soc: float | None = None
     capacity_kwh: float | None = None
     invert: bool = False
+    split: bool = False
+    charge: float | None = None
+    discharge: float | None = None
+    measured: bool = True
 
     @property
     def normalized_power(self) -> float | None:
         """Power with charging positive."""
+        if not self.measured:
+            return None
+        if self.split:
+            if self.charge is None and self.discharge is None:
+                return None
+            return abs(self.charge or 0.0) - abs(self.discharge or 0.0)
         if self.power is None:
             return None
         return -self.power if self.invert else self.power
@@ -58,15 +74,28 @@ class BatteryInput:
 
 @dataclass
 class Inputs:
-    """Everything the calculation needs, already converted to W."""
+    """Everything the calculation needs, already converted to W.
+
+    ``*_configured`` tells "no sensor chosen" (may be computed) apart from
+    "sensor currently unavailable" (value None, not computed). ``None``
+    means: derive it from whether a value was given.
+    """
 
     solar_strings: list[float | None] = field(default_factory=list)
     batteries: list[BatteryInput] = field(default_factory=list)
     grid_power: float | None = None
     grid_invert: bool = False
+    grid_split: bool = False
+    grid_import_power: float | None = None
+    grid_export_power: float | None = None
+    grid_configured: bool | None = None
     home_measured: float | None = None
+    home_configured: bool | None = None
     fixed_loads: list[float | None] = field(default_factory=list)
     flexible_loads: list[float | None] = field(default_factory=list)
+    backup_loads: list[float | None] = field(default_factory=list)
+    wallbox: float | None = None
+    wallbox_flexible: bool = True
 
 
 @dataclass
@@ -79,14 +108,19 @@ class Result:
     battery_power: float | None
     battery_soc: float | None
     battery_energy_kwh: float | None
+    battery_charge: float | None
+    battery_discharge: float | None
     grid_power: float | None
     grid_import: float | None
     grid_export: float | None
     home_power: float | None
     fixed_power: float | None
     flexible_power: float | None
+    backup_power: float | None
+    wallbox_power: float | None
     unmeasured_power: float | None
     surplus: float | None
+    computed: set[str] = field(default_factory=set)
 
 
 def _sum(values: list[float | None]) -> float | None:
@@ -115,38 +149,94 @@ def remaining_energy_kwh(batteries: list[BatteryInput]) -> float | None:
     return sum(parts) if parts else None
 
 
+def valid_parents(raw: dict[str, str] | None, configured: set[str]) -> dict[str, str]:
+    """'Contained in' links usable for the calculation.
+
+    Both sides must be configured loads, a load can't contain itself, and a
+    contained load can't contain others (no chains), so nothing is dropped twice.
+    """
+    links = {c: p for c, p in (raw or {}).items() if c in configured and p in configured and c != p}
+    return {c: p for c, p in links.items() if p not in links}
+
+
+def _grid(inp: Inputs) -> float | None:
+    if inp.grid_split:
+        if inp.grid_import_power is None and inp.grid_export_power is None:
+            return None
+        return abs(inp.grid_import_power or 0.0) - abs(inp.grid_export_power or 0.0)
+    if inp.grid_power is None:
+        return None
+    return -inp.grid_power if inp.grid_invert else inp.grid_power
+
+
 def compute(inp: Inputs) -> Result:
-    """Derive all normalized values from the inputs."""
-    solar = _sum(inp.solar_strings)
+    """Derive all normalized values; fill one gap of the energy balance.
+
+    Balance: PV + grid = house + battery charging. If one of these has no
+    sensor configured, it is computed from the others. Usually that is the
+    house; with a measured house consumption the grid, the PV or a single
+    battery without power sensor can be computed instead.
+    """
+    computed: set[str] = set()
+    solar_cfg = bool(inp.solar_strings)
+    if inp.grid_configured is not None:
+        grid_cfg = inp.grid_configured
+    else:
+        grid_cfg = any(v is not None for v in (inp.grid_power, inp.grid_import_power, inp.grid_export_power))
+    home_cfg = inp.home_configured if inp.home_configured is not None else inp.home_measured is not None
+
+    solar = _sum(inp.solar_strings) if solar_cfg else None
     if solar is not None:
         solar = max(solar, 0.0)
-
+    grid = _grid(inp) if grid_cfg else None
     bat_powers = [b.normalized_power for b in inp.batteries]
+    unmeasured_bats = [i for i, b in enumerate(inp.batteries) if not b.measured]
+    home = max(inp.home_measured, 0.0) if home_cfg and inp.home_measured is not None else None
+
+    def known_bats() -> float:
+        return sum(p for p in bat_powers if p is not None)
+
+    if not home_cfg:
+        if solar is not None or grid is not None or any(p is not None for p in bat_powers):
+            home = max((solar or 0.0) + (grid or 0.0) - known_bats(), 0.0)
+            computed.add("home")
+    elif home is not None:
+        if not grid_cfg and not unmeasured_bats:
+            grid = home + known_bats() - (solar or 0.0)
+            computed.add("grid")
+        elif not solar_cfg and grid_cfg and not unmeasured_bats:
+            solar = max(home + known_bats() - (grid or 0.0), 0.0)
+            computed.add("solar")
+        elif len(unmeasured_bats) == 1 and grid_cfg and solar_cfg:
+            i = unmeasured_bats[0]
+            bat_powers[i] = (solar or 0.0) + (grid or 0.0) - home - known_bats()
+            computed.add(f"battery_{i + 1}")
+
     bat_total = _sum(bat_powers)
+    charge = _sum([max(p, 0.0) for p in bat_powers if p is not None])
+    discharge = _sum([max(-p, 0.0) for p in bat_powers if p is not None])
 
-    grid = inp.grid_power
-    if grid is not None and inp.grid_invert:
-        grid = -grid
-
-    grid_import = max(grid, 0.0) if grid is not None else None
-    grid_export = max(-grid, 0.0) if grid is not None else None
-
-    fixed = _sum(inp.fixed_loads)
-    flexible = _sum(inp.flexible_loads)
-
-    if inp.home_measured is not None:
-        home: float | None = max(inp.home_measured, 0.0)
-    elif solar is None and grid is None and bat_total is None:
-        home = None
+    if inp.grid_split and grid_cfg:
+        grid_import = abs(inp.grid_import_power) if inp.grid_import_power is not None else None
+        grid_export = abs(inp.grid_export_power) if inp.grid_export_power is not None else None
     else:
-        # Energy balance: what comes in (PV + grid) minus what goes into the
-        # battery is the house's total consumption (all loads included).
-        home = max((solar or 0.0) + (grid or 0.0) - (bat_total or 0.0), 0.0)
+        grid_import = max(grid, 0.0) if grid is not None else None
+        grid_export = max(-grid, 0.0) if grid is not None else None
+
+    wallbox = max(inp.wallbox, 0.0) if inp.wallbox is not None else None
+    fixed = _sum(inp.fixed_loads)
+    # a controllable wallbox is part of the controllable loads
+    flexible = _sum([*inp.flexible_loads, wallbox] if inp.wallbox_flexible else inp.flexible_loads)
+    backup = _sum(inp.backup_loads)
 
     # Part of the house consumption no load sensor accounts for (base load).
+    # Backup loads are fed through the inverter but still count to the house.
     unmeasured = None
-    if home is not None and (fixed is not None or flexible is not None):
-        unmeasured = max(home - (fixed or 0.0) - (flexible or 0.0), 0.0)
+    if home is not None and any(v is not None for v in (fixed, flexible, backup, wallbox)):
+        known = (fixed or 0.0) + (flexible or 0.0) + (backup or 0.0)
+        if not inp.wallbox_flexible:
+            known += wallbox or 0.0
+        unmeasured = max(home - known, 0.0)
 
     surplus = None
     if solar is not None and home is not None:
@@ -159,14 +249,19 @@ def compute(inp: Inputs) -> Result:
         battery_power=bat_total,
         battery_soc=combined_soc(inp.batteries),
         battery_energy_kwh=remaining_energy_kwh(inp.batteries),
+        battery_charge=charge,
+        battery_discharge=discharge,
         grid_power=grid,
         grid_import=grid_import,
         grid_export=grid_export,
         home_power=home,
         fixed_power=fixed,
         flexible_power=flexible,
+        backup_power=backup,
+        wallbox_power=wallbox,
         unmeasured_power=unmeasured,
         surplus=surplus,
+        computed=computed,
     )
 
 

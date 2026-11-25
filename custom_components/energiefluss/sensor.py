@@ -22,9 +22,9 @@ from .calc import Result
 from .const import (
     CONF_BATTERY_NAME,
     DOMAIN,
-    HOME_ENERGY_KEY,
+    ENERGY_TOTALS,
     PERIOD_ROLLING,
-    home_today_unique_id,
+    total_today_unique_id,
     load_today_unique_id,
 )
 from .hub import EnergieflussHub
@@ -57,6 +57,8 @@ GLOBAL_SENSORS: tuple[EfSensorDescription, ...] = (
     _power("home_power", lambda r: r.home_power),
     _power("fixed_power", lambda r: r.fixed_power),
     _power("flexible_power", lambda r: r.flexible_power),
+    _power("backup_power", lambda r: r.backup_power),
+    _power("wallbox_power", lambda r: r.wallbox_power),
     _power("unmeasured_power", lambda r: r.unmeasured_power),
     _power("surplus", lambda r: r.surplus),
 )
@@ -132,7 +134,10 @@ async def async_setup_entry(
     async_add_entities(
         [
             *entities,
-            EfEnergySensor(hub, HOME_ENERGY_KEY, home_today_unique_id(hub.entry.entry_id), "home"),
+            *(
+                EfEnergySensor(hub, key, total_today_unique_id(hub.entry.entry_id, name), name)
+                for key, (_attr, name) in ENERGY_TOTALS.items()
+            ),
             *(
                 EfEnergySensor(
                     hub,
@@ -236,7 +241,7 @@ class EfEnergySensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, str]:
         attrs = {"period": self._hub.energy_period}
-        if self._key != HOME_ENERGY_KEY:
+        if self._key not in ENERGY_TOTALS:
             attrs["source"] = self._key
         return attrs
 

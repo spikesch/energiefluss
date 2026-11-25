@@ -6,7 +6,8 @@
   .\scripts\deploy.ps1            # build, upload, restart test HA
   .\scripts\deploy.ps1 -Setup     # first time: create test HA on the NAS
   .\scripts\deploy.ps1 -Config    # also upload dev/config/configuration.yaml (simulation)
-  .\scripts\deploy.ps1 -NoRestart # upload only (card changes need just a browser reload)
+  .\scripts\deploy.ps1 -NoRestart # upload only; browsers may keep the old card cached
+                                  # (its URL version changes only on restart)
 
   Settings come from scripts\deploy.local.psd1 (not in git), see deploy.example.psd1.
 #>

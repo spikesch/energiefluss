@@ -109,3 +109,85 @@ export function gridMeaning(w: number | null, invert: boolean): string {
   if (Math.abs(p) < 5) return "ausgeglichen";
   return p > 0 ? "Bezug" : "Einspeisung";
 }
+
+export interface BatterySlot {
+  cx: number; // centre x of the widget
+  top: number; // y of the power box
+  w: number; // width of the power box
+}
+
+/** Vertical offset of the lowered batteries in the staggered row. */
+export const BATTERY_STAGGER = 44;
+/** Top of the raised batteries (below the storage summary box). */
+export const BATTERY_TOP = 290;
+
+/**
+ * Positions of up to 5 battery widgets in one row below the inverter, left to
+ * right. Counted from the right they alternate high / low / high ..., so the
+ * two rightmost ones can lead their backup output straight to the right.
+ */
+export function batterySlots(n: number): BatterySlot[] {
+  if (n <= 0) return [];
+  const centres = [[230], [195, 275], [160, 228, 296], [140, 192, 244, 296], [136, 184, 232, 280, 328]][
+    Math.min(n, 5) - 1
+  ];
+  const w = n <= 3 ? 54 : n === 4 ? 46 : 44;
+  return centres.map((cx, i) => {
+    const fromRight = centres.length - 1 - i;
+    return { cx, top: BATTERY_TOP + (fromRight % 2 === 1 ? BATTERY_STAGGER : 0), w };
+  });
+}
+
+/**
+ * Fit a label into a small box: one line if short, otherwise two lines
+ * (split at the space closest to the middle) in a smaller font, and only
+ * if even that does not fit, cut with an ellipsis.
+ */
+export function fitLabel(name: string, maxOne = 15, maxTwo = 19): { lines: string[]; small: boolean } {
+  const text = name.trim();
+  if (text.length <= maxOne) return { lines: [text], small: false };
+  const cut = (s: string) => (s.length > maxTwo ? s.slice(0, maxTwo - 1) + "…" : s);
+  const spaces = [...text.matchAll(/ /g)].map((m) => m.index!);
+  const fitting = spaces.filter((i) => i <= maxTwo && text.length - i - 1 <= maxTwo);
+  const pool = fitting.length ? fitting : spaces.filter((i) => i <= maxTwo);
+  if (pool.length) {
+    const mid = text.length / 2;
+    const at = pool.reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a));
+    return { lines: [text.slice(0, at), cut(text.slice(at + 1))], small: true };
+  }
+  // one long word: hard split
+  return { lines: [text.slice(0, maxTwo), cut(text.slice(maxTwo))], small: true };
+}
+
+/** Dot radius between about 2.1 and 6.7 px depending on power (for the "size" style). */
+/** Overall size of the dots in the "size" style (1 = original, 4/3 = a third bigger). */
+export const DOT_SCALE = 4 / 3;
+
+export function dotRadius(w: number, maxW: number): number {
+  const ratio = Math.min(Math.abs(w) / Math.max(maxW, 1), 1);
+  return +((1.6 + 3.4 * Math.sqrt(ratio)) * DOT_SCALE).toFixed(2);
+}
+
+/** Length of a path made of M / H / V commands (all our flow lines are). */
+export function pathLength(d: string): number {
+  const tokens = d.trim().split(/\s+/);
+  let x = 0;
+  let y = 0;
+  let len = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t === "M") {
+      x = +tokens[++i];
+      y = +tokens[++i];
+    } else if (t === "H") {
+      const nx = +tokens[++i];
+      len += Math.abs(nx - x);
+      x = nx;
+    } else if (t === "V") {
+      const ny = +tokens[++i];
+      len += Math.abs(ny - y);
+      y = ny;
+    }
+  }
+  return len;
+}

@@ -81,7 +81,7 @@ export class EnergieflussPanel extends LitElement {
     :host {
       display: block;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow-x: clip; /* not hidden: that would break position: sticky */
       background: var(--primary-background-color);
       color: var(--primary-text-color);
     }

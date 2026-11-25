@@ -60,3 +60,58 @@ describe("editor hints", () => {
     expect(powerUnitWarning(undefined)).toBe("Sensor nicht gefunden");
   });
 });
+
+import { batterySlots } from "./format";
+
+describe("battery layout", () => {
+  it("keeps the classic positions up to three", () => {
+    expect(batterySlots(3).map((s) => s.cx)).toEqual([160, 228, 296]);
+  });
+  it("staggers from the right: high, low, high, low, high", () => {
+    const tops = batterySlots(5).map((s) => s.top);
+    expect(tops).toEqual([290, 334, 290, 334, 290]);
+    expect(batterySlots(2).map((s) => s.top)).toEqual([334, 290]);
+  });
+  it("stays left of the feed lanes (x >= 358)", () => {
+    for (let n = 1; n <= 5; n++) {
+      expect(Math.max(...batterySlots(n).map((x) => x.cx + x.w / 2))).toBeLessThan(354);
+    }
+  });
+});
+
+import { fitLabel } from "./format";
+
+describe("fitLabel", () => {
+  it("short names stay on one line", () => {
+    expect(fitLabel("Kühlschrank")).toEqual({ lines: ["Kühlschrank"], small: false });
+  });
+  it("long names wrap at the space nearest the middle", () => {
+    expect(fitLabel("Shelly Plug Waschmaschine")).toEqual({ lines: ["Shelly Plug", "Waschmaschine"], small: true });
+  });
+  it("very long names are cut with an ellipsis", () => {
+    const r = fitLabel("Tripple Klima Leistung Obergeschoss Schlafzimmer");
+    expect(r.lines.length).toBe(2);
+    expect(r.lines[1].endsWith("…")).toBe(true);
+    expect(r.lines.every((l) => l.length <= 19)).toBe(true);
+  });
+  it("one long word is split hard", () => {
+    const r = fitLabel("Waschmaschinensteckdosenleistung");
+    expect(r.lines[0]).toBe("Waschmaschinensteck");
+    expect(r.lines[1].length).toBeLessThanOrEqual(19);
+  });
+});
+
+import { dotRadius, pathLength } from "./format";
+
+describe("size style", () => {
+  it("bigger dots for more power, within limits", () => {
+    expect(dotRadius(0, 5000)).toBe(2.13);
+    expect(dotRadius(5000, 5000)).toBe(6.67);
+    expect(dotRadius(99999, 5000)).toBe(6.67);
+    expect(dotRadius(500, 5000)).toBeLessThan(dotRadius(2000, 5000));
+  });
+  it("measures M/H/V paths", () => {
+    expect(pathLength("M 80 134 V 185 H 148")).toBe(51 + 68);
+    expect(pathLength("M 10 10 H 10")).toBe(0);
+  });
+});

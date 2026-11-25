@@ -93,6 +93,22 @@ input_number:
     initial: 85
     unit_of_measurement: "%"
     mode: slider
+  sim_bat4_power:
+    name: "Sim Speicher 4 (Laden +)"
+    min: -2000
+    max: 2000
+    step: 10
+    initial: 300
+    unit_of_measurement: "W"
+    mode: slider
+  sim_bat4_soc:
+    name: "Sim Speicher 4 SoC"
+    min: 0
+    max: 100
+    step: 1
+    initial: 60
+    unit_of_measurement: "%"
+    mode: slider
   sim_grundlast:
     name: "Sim Grundlast (nicht gemessen)"
     min: 0
@@ -133,6 +149,14 @@ input_number:
     initial: 124
     unit_of_measurement: "W"
     mode: slider
+  sim_load_wasserkocher:
+    name: "Sim Wasserkocher"
+    min: 0
+    max: 2500
+    step: 10
+    initial: 0
+    unit_of_measurement: "W"
+    mode: slider
   sim_load_klima1:
     name: "Sim Klima1"
     min: 0
@@ -150,7 +174,7 @@ input_number:
     unit_of_measurement: "W"
     mode: slider
   sim_load_kuehlschrank:
-    name: "Sim Kühlschrank"
+    name: "Sim Kühlschrank Küche Keller"
     min: 0
     max: 300
     step: 5
@@ -174,7 +198,7 @@ input_number:
     unit_of_measurement: "W"
     mode: slider
   sim_aux_waschmaschine:
-    name: "Sim Waschmaschine"
+    name: "Sim Waschmaschine Shelly Plug S"
     min: 0
     max: 2500
     step: 10
@@ -188,6 +212,22 @@ input_number:
     step: 0.1
     initial: 0
     unit_of_measurement: "kW"
+    mode: slider
+  sim_wallbox:
+    name: "Sim Wallbox Leistung"
+    min: 0
+    max: 11000
+    step: 50
+    initial: 3700
+    unit_of_measurement: "W"
+    mode: slider
+  sim_auto_soc:
+    name: "Sim Auto Ladestand"
+    min: 0
+    max: 100
+    step: 1
+    initial: 64
+    unit_of_measurement: "%"
     mode: slider
   sim_pv_today:
     name: "Sim PV heute"
@@ -292,6 +332,12 @@ template:
         unit_of_measurement: "%"
         device_class: battery
         state_class: measurement
+      - name: "Speicher 4 SoC"
+        unique_id: sim_bat4_soc
+        state: "{{ states('input_number.sim_bat4_soc') }}"
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
       - name: "Vava"
         unique_id: sim_load_vava
         state: "{{ states('input_number.sim_load_vava') }}"
@@ -312,7 +358,13 @@ template:
         state_class: measurement
       - name: "Neubau"
         unique_id: sim_load_neubau
-        state: "{{ states('input_number.sim_load_neubau') }}"
+        state: "{{ ((states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_wasserkocher') | float(0))) | round(1) }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Wasserkocher"
+        unique_id: sim_load_wasserkocher
+        state: "{{ states('input_number.sim_load_wasserkocher') }}"
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
@@ -328,7 +380,7 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-      - name: "Kühlschrank"
+      - name: "Kühlschrank Küche Keller"
         unique_id: sim_load_kuehlschrank
         state: "{{ states('input_number.sim_load_kuehlschrank') }}"
         unit_of_measurement: "W"
@@ -346,7 +398,7 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-      - name: "Waschmaschine"
+      - name: "Waschmaschine Shelly Plug S"
         unique_id: sim_aux_waschmaschine
         state: "{{ states('input_number.sim_aux_waschmaschine') }}"
         unit_of_measurement: "W"
@@ -357,6 +409,18 @@ template:
         state: "{{ states('input_number.sim_aux_duschen') }}"
         unit_of_measurement: "kW"
         device_class: power
+        state_class: measurement
+      - name: "Wallbox Leistung"
+        unique_id: sim_wallbox
+        state: "{{ states('input_number.sim_wallbox') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Auto Ladestand"
+        unique_id: sim_auto_soc
+        state: "{{ states('input_number.sim_auto_soc') }}"
+        unit_of_measurement: "%"
+        device_class: battery
         state_class: measurement
       - name: "PV heute"
         unique_id: sim_pv_today
@@ -390,7 +454,42 @@ template:
       - name: "Netz Leistung"
         unique_id: sim_grid_power
         state: >-
-          {{ (0 - (states('input_number.sim_pv_westnord') | float(0)) - (states('input_number.sim_pv_ost') | float(0)) - (states('input_number.sim_pv_sudwest') | float(0)) - (states('input_number.sim_pv_ostwest') | float(0)) + (states('input_number.sim_bat1_power') | float(0)) + (states('input_number.sim_bat2_power') | float(0)) - (states('input_number.sim_bat3_power') | float(0)) * 1000 + (states('input_number.sim_grundlast') | float(0)) + (states('input_number.sim_load_vava') | float(0)) + (states('input_number.sim_load_tv') | float(0)) + (states('input_number.sim_load_ecoflow') | float(0)) + (states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_klima1') | float(0)) + (states('input_number.sim_load_klima3') | float(0)) + (states('input_number.sim_load_kuehlschrank') | float(0)) + (states('input_number.sim_load_buero') | float(0)) * 1000 + (states('input_number.sim_aux_trockner') | float(0)) + (states('input_number.sim_aux_waschmaschine') | float(0)) + (states('input_number.sim_aux_duschen') | float(0)) * 1000) | round(1) }}
+          {{ (0 - (states('input_number.sim_pv_westnord') | float(0)) - (states('input_number.sim_pv_ost') | float(0)) - (states('input_number.sim_pv_sudwest') | float(0)) - (states('input_number.sim_pv_ostwest') | float(0)) + (states('input_number.sim_bat1_power') | float(0)) + (states('input_number.sim_bat2_power') | float(0)) - (states('input_number.sim_bat3_power') | float(0)) * 1000 + (states('input_number.sim_bat4_power') | float(0)) + (states('input_number.sim_grundlast') | float(0)) + (states('input_number.sim_load_vava') | float(0)) + (states('input_number.sim_load_tv') | float(0)) + (states('input_number.sim_load_ecoflow') | float(0)) + (states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_wasserkocher') | float(0)) + (states('input_number.sim_load_klima1') | float(0)) + (states('input_number.sim_load_klima3') | float(0)) + (states('input_number.sim_load_kuehlschrank') | float(0)) + (states('input_number.sim_load_buero') | float(0)) * 1000 + (states('input_number.sim_aux_trockner') | float(0)) + (states('input_number.sim_aux_waschmaschine') | float(0)) + (states('input_number.sim_aux_duschen') | float(0)) * 1000 + (states('input_number.sim_wallbox') | float(0))) | round(1) }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Tibber Bezug"
+        unique_id: sim_tibber_power
+        state: >-
+          {{ [((0 - (states('input_number.sim_pv_westnord') | float(0)) - (states('input_number.sim_pv_ost') | float(0)) - (states('input_number.sim_pv_sudwest') | float(0)) - (states('input_number.sim_pv_ostwest') | float(0)) + (states('input_number.sim_bat1_power') | float(0)) + (states('input_number.sim_bat2_power') | float(0)) - (states('input_number.sim_bat3_power') | float(0)) * 1000 + (states('input_number.sim_bat4_power') | float(0)) + (states('input_number.sim_grundlast') | float(0)) + (states('input_number.sim_load_vava') | float(0)) + (states('input_number.sim_load_tv') | float(0)) + (states('input_number.sim_load_ecoflow') | float(0)) + (states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_wasserkocher') | float(0)) + (states('input_number.sim_load_klima1') | float(0)) + (states('input_number.sim_load_klima3') | float(0)) + (states('input_number.sim_load_kuehlschrank') | float(0)) + (states('input_number.sim_load_buero') | float(0)) * 1000 + (states('input_number.sim_aux_trockner') | float(0)) + (states('input_number.sim_aux_waschmaschine') | float(0)) + (states('input_number.sim_aux_duschen') | float(0)) * 1000 + (states('input_number.sim_wallbox') | float(0))) | round(1)), 0] | max }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Tibber Einspeisung"
+        unique_id: sim_tibber_power_production
+        state: >-
+          {{ [-((0 - (states('input_number.sim_pv_westnord') | float(0)) - (states('input_number.sim_pv_ost') | float(0)) - (states('input_number.sim_pv_sudwest') | float(0)) - (states('input_number.sim_pv_ostwest') | float(0)) + (states('input_number.sim_bat1_power') | float(0)) + (states('input_number.sim_bat2_power') | float(0)) - (states('input_number.sim_bat3_power') | float(0)) * 1000 + (states('input_number.sim_bat4_power') | float(0)) + (states('input_number.sim_grundlast') | float(0)) + (states('input_number.sim_load_vava') | float(0)) + (states('input_number.sim_load_tv') | float(0)) + (states('input_number.sim_load_ecoflow') | float(0)) + (states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_wasserkocher') | float(0)) + (states('input_number.sim_load_klima1') | float(0)) + (states('input_number.sim_load_klima3') | float(0)) + (states('input_number.sim_load_kuehlschrank') | float(0)) + (states('input_number.sim_load_buero') | float(0)) * 1000 + (states('input_number.sim_aux_trockner') | float(0)) + (states('input_number.sim_aux_waschmaschine') | float(0)) + (states('input_number.sim_aux_duschen') | float(0)) * 1000 + (states('input_number.sim_wallbox') | float(0))) | round(1)), 0] | max }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Speicher 4 Laden"
+        unique_id: sim_bat4_charge
+        state: >-
+          {{ [(states('input_number.sim_bat4_power') | float(0)), 0] | max }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Speicher 4 Entladen"
+        unique_id: sim_bat4_discharge
+        state: >-
+          {{ [-(states('input_number.sim_bat4_power') | float(0)), 0] | max }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+      - name: "Haus Leistung gemessen"
+        unique_id: sim_house_power
+        state: >-
+          {{ ((states('input_number.sim_grundlast') | float(0)) + (states('input_number.sim_load_vava') | float(0)) + (states('input_number.sim_load_tv') | float(0)) + (states('input_number.sim_load_ecoflow') | float(0)) + (states('input_number.sim_load_neubau') | float(0)) + (states('input_number.sim_load_wasserkocher') | float(0)) + (states('input_number.sim_load_klima1') | float(0)) + (states('input_number.sim_load_klima3') | float(0)) + (states('input_number.sim_load_kuehlschrank') | float(0)) + (states('input_number.sim_load_buero') | float(0)) * 1000 + (states('input_number.sim_aux_trockner') | float(0)) + (states('input_number.sim_aux_waschmaschine') | float(0)) + (states('input_number.sim_aux_duschen') | float(0)) * 1000 + (states('input_number.sim_wallbox') | float(0))) | round(1) }}
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement

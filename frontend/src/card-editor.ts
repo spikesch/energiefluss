@@ -13,17 +13,19 @@ interface CardConfig {
   entry_id?: string;
   title?: string;
   max_power?: number;
+  flow_style?: "speed" | "size";
   [key: string]: unknown;
 }
 
 const LABELS: Record<string, string> = {
   entry_id: "Anlage",
   title: "Titel der Karte (optional)",
-  max_power: "Leistung für schnellste Animation",
+  flow_style: "Animation",
+  max_power: "Leistung für größte bzw. schnellste Punkte",
 };
 
 const HELPERS: Record<string, string> = {
-  max_power: "Ab dieser Leistung laufen die Punkte am schnellsten. Standard 5000 W.",
+  max_power: "Ab dieser Leistung sind die Punkte am größten bzw. schnellsten. Standard 5000 W.",
 };
 
 export class EnergieflussCardEditor extends LitElement {
@@ -60,6 +62,18 @@ export class EnergieflussCardEditor extends LitElement {
     }
     schema.push(
       { name: "title", selector: { text: {} } },
+      {
+        name: "flow_style",
+        selector: {
+          select: {
+            mode: "list",
+            options: [
+              { value: "speed", label: "Tempo der Punkte zeigt die Leistung" },
+              { value: "size", label: "Größe der Punkte zeigt die Leistung" },
+            ],
+          },
+        },
+      },
       { name: "max_power", selector: { number: { min: 500, max: 30000, step: 100, mode: "box", unit_of_measurement: "W" } } },
     );
     return schema;
@@ -68,7 +82,7 @@ export class EnergieflussCardEditor extends LitElement {
   private _cardChanged(ev: CustomEvent<{ value: Partial<CardConfig> }>): void {
     ev.stopPropagation();
     const next: CardConfig = { ...this._config!, ...ev.detail.value };
-    for (const key of ["entry_id", "title", "max_power"] as const) {
+    for (const key of ["entry_id", "title", "max_power", "flow_style"] as const) {
       if (next[key] === undefined || next[key] === "" || next[key] === null) delete next[key];
     }
     this._config = next;

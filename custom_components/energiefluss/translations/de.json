@@ -74,6 +74,42 @@
       },
       "home_24h": {
         "name": "Hausverbrauch 24 h"
+      },
+      "solar_today": {
+        "name": "PV-Ertrag heute"
+      },
+      "solar_24h": {
+        "name": "PV-Ertrag 24 h"
+      },
+      "grid_import_today": {
+        "name": "Netzbezug heute"
+      },
+      "grid_import_24h": {
+        "name": "Netzbezug 24 h"
+      },
+      "grid_export_today": {
+        "name": "Einspeisung heute"
+      },
+      "grid_export_24h": {
+        "name": "Einspeisung 24 h"
+      },
+      "battery_charge_today": {
+        "name": "Batterie geladen heute"
+      },
+      "battery_charge_24h": {
+        "name": "Batterie geladen 24 h"
+      },
+      "battery_discharge_today": {
+        "name": "Batterie entladen heute"
+      },
+      "battery_discharge_24h": {
+        "name": "Batterie entladen 24 h"
+      },
+      "backup_power": {
+        "name": "Notstrom-Verbraucher"
+      },
+      "wallbox_power": {
+        "name": "Wallbox"
       }
     }
   }

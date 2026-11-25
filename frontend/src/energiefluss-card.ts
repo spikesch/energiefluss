@@ -3,6 +3,10 @@ import { property, state } from "lit/decorators.js";
 import { UPDATED_EVENT } from "./editor-core";
 import "./card-editor";
 import {
+  batterySlots,
+  dotRadius,
+  pathLength,
+  fitLabel,
   centsPerKwh,
   fmtCents,
   flowDuration,
@@ -32,12 +36,33 @@ interface CardConfig {
   entry_id?: string;
   title?: string;
   max_power?: number;
-  colours?: Partial<Record<"solar" | "battery" | "grid" | "home" | "flexible" | "inverter", string>>;
+  flow_style?: "speed" | "size";
+  colours?: Partial<Record<"solar" | "battery" | "grid" | "home" | "flexible" | "backup" | "inverter", string>>;
 }
 
 interface Load {
   entity: string;
   today: string | null;
+  children?: Load[]; // loads contained in this one (counted only once)
+}
+
+/** A load row plus the feed path from its source (house, inverter or battery). */
+interface ListLoad extends Load {
+  trunk: string;
+  source?: string;
+  label?: string; // shown instead of the entity's name
+  tip?: string; // tooltip instead of the default one
+}
+
+/** One group of loads on the right with its position and feed path. */
+interface LoadGroup {
+  title: string;
+  colour: string;
+  power: number | null;
+  titleY: number;
+  y0: number;
+  trunk: string;
+  loads: ListLoad[];
 }
 
 interface Layout {
@@ -47,7 +72,13 @@ interface Layout {
   home_today: string | null;
   entities: Record<string, string | null>;
   solar: { strings: { entity: string }[]; today: string | null; forecast_remaining: string | null };
-  batteries: { name: string; capacity_kwh: number | null; power: string | null; soc: string | null }[];
+  batteries: {
+    name: string;
+    capacity_kwh: number | null;
+    power: string | null;
+    soc: string | null;
+    backup?: Load[];
+  }[];
   grid: {
     price: string | null;
     export_price: string | null;
@@ -55,8 +86,12 @@ interface Layout {
     import_today: string | null;
     export_today: string | null;
   };
+  wallbox?: { name: string; power: string; soc: string | null; today: string | null; flexible: boolean } | null;
   loads: { fixed: Load[]; flexible: Load[] };
 }
+
+/** Visual rows of a load list: every load plus the loads contained in it. */
+const rowCount = (loads: Load[]): number => loads.reduce((n, l) => n + 1 + (l.children?.length ?? 0), 0);
 
 const DEFAULT_COLOURS = {
   solar: "#ff9800",
@@ -64,27 +99,45 @@ const DEFAULT_COLOURS = {
   grid: "#5490c2",
   home: "#5fb6ad",
   flexible: "#9575cd",
+  backup: "#ef5350",
   inverter: "#959595",
 };
 
 // Layout: left = PV (top) + grid (bottom); centre column = house, inverter,
 // batteries; right = all loads as lists.
-const VIEW_W = 530;
+const VIEW_W = 554;
 // Inverter box: left edge flush with the first battery's power box.
 const INV_X = 148;
 const INV_CX = INV_X + 30;
 const VIEW_H = 400;
-const LOAD_X0 = 344; // list: name starts here
-const LOAD_XP = 480; // power column (right-aligned)
-const LOAD_X1 = 526; // today's energy column (right-aligned)
-const LOAD_ROW = 17; // height of one list row
+// Storage summary box between inverter and batteries (as wide as the battery
+// boxes below it); battery lines branch from it.
+const STORE_Y = 240;
+const STORE_H = 22;
+const LOAD_X0 = 396; // list: name starts here (room for feed lanes left of it)
+const BRACKET_X = LOAD_X0 - 20; // vertical bracket of a list; rows branch off it
+const LOAD_XP = 504; // power box: right edge (name box ends 4 px before it)
+const LOAD_PW = 40; // power box: width
+const LOAD_X1 = 550; // energy box: right edge
+const LOAD_EW = 42; // energy box: width
+const LOAD_ROW = 22; // height of one list row
 const LOAD_TITLE = 18; // height of a group title
+// Vertical lanes between the batteries and the lists (bracket at BRACKET_X = 376).
+const LANE_WALLBOX = 358; // wallbox feed from the inverter
+const WALLBOX_LINE_Y = 207; // height of the wallbox feed at the inverter's right side
+const LANE_BATTERY_1 = 364; // rightmost battery's output
+const LANE_BATTERY_2 = 370; // second battery's output // vertical lane of the backup feed, right of the batteries
 const MIN_FLOW_W = 5;
+const DOT_SPEED = 40; // px per second in the "size" style
+const TRAIN_GAP = 14; // px between the wagons of a load train
+const TRAIN_PAUSE = 0.8; // s between two trains
 
 // mdi icon paths (Material Design Icons, Apache 2.0)
 const ICON_HOME = "M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z";
 const ICON_TOWER =
   "M8.28,5.45L6.5,4.55L7.76,2H16.24L17.5,4.55L15.72,5.45L15,4H9L8.28,5.45M18.62,8H14.09L13.3,5H10.7L9.91,8H5.38L4.1,10.55L5.89,11.44L6.62,10H17.38L18.1,11.44L19.89,10.55L18.62,8M17.77,22H15.7L15.46,21.1L12,15.9L8.53,21.1L8.3,22H6.23L9.12,11H11.19L10.83,12.35L12,14.1L13.16,12.35L12.81,11H14.88L17.77,22M11.4,15L10.5,13.65L9.32,18.13L11.4,15M14.68,18.12L13.5,13.64L12.6,15L14.68,18.12Z";
+const ICON_CAR =
+  "M5,11L6.5,6.5H17.5L19,11M17.5,16A1.5,1.5 0 0,1 16,14.5A1.5,1.5 0 0,1 17.5,13A1.5,1.5 0 0,1 19,14.5A1.5,1.5 0 0,1 17.5,16M6.5,16A1.5,1.5 0 0,1 5,14.5A1.5,1.5 0 0,1 6.5,13A1.5,1.5 0 0,1 8,14.5A1.5,1.5 0 0,1 6.5,16M18.92,6C18.72,5.42 18.16,5 17.5,5H6.5C5.84,5 5.28,5.42 5.08,6L3,12V20A1,1 0 0,0 4,21H5A1,1 0 0,0 6,20V19H18V20A1,1 0 0,0 19,21H20A1,1 0 0,0 21,20V12L18.92,6Z";
 const ICON_SOLAR =
   "M4,2H20A2,2 0 0,1 22,4V14A2,2 0 0,1 20,16H15V20H18V22H13V16H11V22H6V20H9V16H4A2,2 0 0,1 2,14V4A2,2 0 0,1 4,2M4,4V8H11V4H4M4,14H11V10H4V14M20,14V10H13V14H20M20,4H13V8H20V4Z";
 
@@ -198,10 +251,40 @@ export class EnergieflussCard extends LitElement {
   }
 
   /** Only the moving dot (for paths whose line is drawn elsewhere). */
-  private _dot(d: string, colour: string, power: number | null, forward = true, r = 3.2): SVGTemplateResult {
+  private get _bySize(): boolean {
+    return this._config?.flow_style === "size";
+  }
+
+  /**
+   * One moving dot. "size" style: constant speed, the dot's size shows the
+   * power; default "speed" style: the reverse. `timing` lets a group of dots
+   * share one period and start staggered (see _loadList).
+   */
+  private _dot(
+    d: string,
+    colour: string,
+    power: number | null,
+    forward = true,
+    r = 3.2,
+    train?: { period: number; begin: number; travel: number },
+  ): SVGTemplateResult {
     if (power === null || Math.abs(power) < MIN_FLOW_W) return svg``;
-    return svg`<circle r=${r} fill=${colour}>
-      <animateMotion dur=${`${flowDuration(power, this._max)}s`} repeatCount="indefinite" calcMode="linear"
+    const bySize = this._bySize;
+    const radius = bySize ? Math.max(1.7, dotRadius(power, this._max) * (r / 3.2)) : r;
+    if (train) {
+      // a wagon of a train: rides for `travel` s, then waits hidden for the next train
+      const t = (train.travel / train.period).toFixed(4);
+      const timing = { dur: `${train.period.toFixed(2)}s`, begin: `${train.begin.toFixed(2)}s` };
+      return svg`<circle r=${radius} fill=${colour} opacity="0">
+        <animateMotion dur=${timing.dur} begin=${timing.begin} repeatCount="indefinite" calcMode="linear"
+          keyPoints="0;1;1" keyTimes=${`0;${t};1`} path=${d} />
+        <animate attributeName="opacity" dur=${timing.dur} begin=${timing.begin} repeatCount="indefinite"
+          calcMode="discrete" values="1;0" keyTimes=${`0;${t}`} />
+      </circle>`;
+    }
+    const dur = bySize ? Math.max(0.6, pathLength(d) / DOT_SPEED) : flowDuration(power, this._max);
+    return svg`<circle r=${radius} fill=${colour}>
+      <animateMotion dur=${`${dur.toFixed(2)}s`} repeatCount="indefinite" calcMode="linear"
         keyPoints=${forward ? "0;1" : "1;0"} keyTimes="0;1" path=${d} />
     </circle>`;
   }
@@ -246,40 +329,65 @@ export class EnergieflussCard extends LitElement {
     `;
   }
 
+  /** Batteries in display order: those with a backup output go to the right. */
+  private _displayBatteries() {
+    const bats = this._layout?.batteries ?? [];
+    const plain = bats.filter((b) => !(b.backup ?? []).length);
+    const backup = bats.filter((b) => (b.backup ?? []).length);
+    const ordered = [...plain, ...backup];
+    const slots = batterySlots(ordered.length);
+    return ordered.map((b, i) => ({ ...b, ...slots[i], index: i }));
+  }
+
   private _batteries(): SVGTemplateResult {
     const L = this._layout!;
     const c = this._c.battery;
     if (!L.batteries.length) return svg``;
     const soc = this._own("battery_soc");
     const energy = this._own("battery_energy");
-    const bats = L.batteries.slice(0, 3);
-    // Column centres below the inverter, depending on how many batteries exist.
-    const centres = ([[250], [210, 290], [175, 245, 315]] as number[][])[bats.length - 1];
+    const shown = this._displayBatteries();
+    const n = shown.length;
+    const total = this._own("battery_power");
+    // flush with the outer edges of the battery boxes below
+    const storeX = Math.min(...shown.map((b) => b.cx - b.w / 2));
+    const storeW = Math.max(...shown.map((b) => b.cx + b.w / 2)) - storeX;
+    // feed from the inverter: straight down if it is above the box, else with a knee
+    const feedX = Math.min(Math.max(INV_CX, storeX + 10), storeX + storeW - 10);
+    const feed =
+      feedX === INV_CX ? `M ${INV_CX} 230 V ${STORE_Y}` : `M ${INV_CX} 230 V ${STORE_Y - 5} H ${feedX} V ${STORE_Y}`;
     return svg`
-      ${bats.map((b, i) => {
-        const cx = centres[i];
+      ${shown.map((b, i) => {
+        const { cx, top, w } = b;
+        const small = w < 54;
         const p = num(this._s(b.power));
         const s = num(this._s(b.soc));
         const fill = Math.max(0, Math.min(100, s ?? 0));
-        // own exit point on the inverter's bottom edge + own horizontal level
-        const exitX = bats.length === 1 ? INV_CX : INV_CX - 12 + i * 12;
-        const level = 240 + i * 5;
-        const path = exitX === cx ? `M ${cx} 230 V 258` : `M ${exitX} 230 V ${level} H ${cx} V 258`;
+        // the storage box spans all batteries: every line drops straight down
+        const path = `M ${cx} ${STORE_Y + STORE_H} V ${top}`;
         const label = p === null ? "" : p > MIN_FLOW_W ? "lädt" : p < -MIN_FLOW_W ? "entlädt" : "ruht";
         return svg`
           ${this._flow(path, c, p, (p ?? 0) > 0)}
-          ${this._box(cx - 27, 258, 54, 22, c, fmtPower(p === null ? null : Math.abs(p), this._loc), 11)}
-          <text x=${cx} y="290" text-anchor="middle" class="tiny">${label}</text>
-          <rect x=${cx - 9} y="300" width="18" height="32" rx="3" fill="none" stroke=${c} />
-          <rect x=${cx - 4} y="297" width="8" height="3" fill=${c} />
-          <rect x=${cx - 7} y=${330 - (28 * fill) / 100} width="14" height=${(28 * fill) / 100} rx="1" fill=${c} fill-opacity="0.7" />
-          <text x=${cx} y="349" text-anchor="middle" class="soc">${fmtPercent(s, this._loc)}</text>
-          <text x=${cx} y="362" text-anchor="middle" class="tiny">${shortName(b.name, 14)}</text>
+          ${this._box(cx - w / 2, top, w, 22, c, fmtPower(p === null ? null : Math.abs(p), this._loc), small ? 10 : 11)}
+          <text x=${cx} y=${top + 32} text-anchor="middle" class="tiny">${label}</text>
+          <rect x=${cx - 9} y=${top + 42} width="18" height="32" rx="3" fill="none" stroke=${c} />
+          <rect x=${cx - 4} y=${top + 39} width="8" height="3" fill=${c} />
+          <rect x=${cx - 7} y=${top + 72 - (28 * fill) / 100} width="14" height=${(28 * fill) / 100} rx="1" fill=${c} fill-opacity="0.7" />
+          <text x=${cx} y=${top + 91} text-anchor="middle" class="soc">${fmtPercent(s, this._loc)}</text>
+          <text x=${cx} y=${top + 104} text-anchor="middle" class="tiny">${shortName(b.name, small ? 10 : 14)}</text>
         `;
       })}
-      <text x="245" y="384" text-anchor="middle" class="small" fill=${c}>
-        Speicher ${fmtPercent(soc, this._loc)}${energy !== null ? ` · ${fmtEnergy(energy, this._loc)}` : ""}
-      </text>
+      ${this._flow(feed, c, total, (total ?? 0) > 0)}
+      ${this._box(
+        storeX,
+        STORE_Y,
+        storeW,
+        STORE_H,
+        c,
+        `${storeW >= 120 ? "Speicher " : ""}${fmtPercent(soc, this._loc)}${
+          energy !== null && storeW >= 80 ? ` · ${fmtEnergy(energy, this._loc)}` : ""
+        }`,
+        storeW >= 150 ? 11 : 10,
+      )}
     `;
   }
 
@@ -292,27 +400,194 @@ export class EnergieflussCard extends LitElement {
     `;
   }
 
-  /** One group as a vertical list: name, current power, energy today.
-   *  `trunk` is the feed path from the house; every running load gets its own
-   *  dot that travels the trunk and on to its row. */
-  private _loadList(loads: Load[], y0: number, colour: string, trunk: string): SVGTemplateResult {
+  /**
+   * All load groups on the right, top to bottom, with their positions and the
+   * feed path (trunk) from their source: house, inverter backup output or a
+   * battery's own output (one group per battery).
+   */
+  private _groups(): LoadGroup[] {
+    const L = this._layout;
+    if (!L) return [];
+    const c = this._c;
+    const bracket = BRACKET_X;
+    const groups: LoadGroup[] = [];
+    let y = 22; // baseline of the first title
+    const add = (
+      title: string,
+      colour: string,
+      loads: (Load & { label?: string; tip?: string })[],
+      power: number | null,
+      trunk: (rowY: number, lineY: number) => string,
+      source?: string,
+      // Where the feed may leave its source: preferred height and allowed range.
+      // The first row goes to the preferred height if there is room; if the
+      // list above pushes it down, the exit follows within the range so the
+      // line still runs straight.
+      exit?: { pref: number; lo: number; hi: number },
+    ) => {
+      if (!loads.length) return;
+      const y0 = Math.max(y + 6, exit ? exit.pref - 10 : 0);
+      const lineY = exit ? Math.min(Math.max(y0 + 10, exit.lo), exit.hi) : y0 + 10;
+      const path = trunk(y0 + 10, lineY);
+      groups.push({
+        title,
+        colour,
+        power,
+        titleY: y0 - 6,
+        y0,
+        trunk: path,
+        loads: loads.map((l) => ({ ...l, trunk: path, source })),
+      });
+      y = y0 + rowCount(loads) * LOAD_ROW + 16;
+    };
+    add("Nicht steuerbar", c.home, L.loads.fixed, this._sumW(L.loads.fixed), (t) => `M 285 79 H 300 V ${t} H ${bracket}`);
+    add("Steuerbar", c.flexible, L.loads.flexible, this._sumW(L.loads.flexible), (t) => `M 285 89 H 306 V ${t} H ${bracket}`);
+    // Wallbox / car: fed from the inverter's right side, straight if there is room
+    const wb = L.wallbox;
+    if (wb) {
+      const soc = num(this._s(wb.soc ?? undefined));
+      const label = soc !== null ? `${wb.name} Auto ${fmtPercent(soc, this._loc)}` : wb.name;
+      add(
+        "Wallbox",
+        wb.flexible ? c.flexible : c.home,
+        [{ entity: wb.power, today: wb.today, label, tip: `${wb.name}${wb.flexible ? " · steuerbar" : ""}` }],
+        this._w(wb.power),
+        (t, ly) => `M ${INV_X + 60} ${ly} H ${LANE_WALLBOX} V ${t} H ${bracket}`,
+        undefined,
+        { pref: WALLBOX_LINE_Y, lo: 176, hi: 226 }, // anywhere on the inverter's right edge
+      );
+    }
+    // Batteries with an own output sit rightmost and lead it straight to the right.
+    const feeds = this._displayBatteries()
+      .filter((b) => (b.backup ?? []).length)
+      .reverse();
+    feeds.forEach((b, k) => {
+      const lane = k === 0 ? LANE_BATTERY_1 : LANE_BATTERY_2;
+      // sideways out of the battery symbol; the lowered battery's line passes
+      // just below the raised one on its right
+      // out of the battery symbol (top+42 .. top+74); the lowered battery stays
+      // below the raised one's name (raised top + 104)
+      const exit =
+        k === 0
+          ? { pref: b.top + 57, lo: b.top + 46, hi: b.top + 70 }
+          : { pref: b.top + 68, lo: b.top + 64, hi: b.top + 72 };
+      add(
+        shortName(b.name, 12), // red colour + feed line from the battery mark it as backup
+        c.backup,
+        b.backup ?? [],
+        this._sumW(b.backup ?? []),
+        (t, ly) => `M ${b.cx + 10} ${ly} H ${lane} V ${t} H ${bracket}`,
+        b.name,
+        exit,
+      );
+    });
+    return groups;
+  }
+
+  private _sumW(loads: Load[]): number | null {
+    return loads.reduce<number | null>((s, l) => {
+      const w = this._w(l.entity);
+      return w === null ? s : (s ?? 0) + w;
+    }, null);
+  }
+
+  /** One group as a vertical list, biggest consumer on top: name, power, energy.
+   *  Every row knows the feed path (`trunk`) from its source; a running load
+   *  gets its own dot that travels the trunk and on to its row. */
+  private _loadList(loads: ListLoad[], y0: number, colour: string): SVGTemplateResult {
+    const byPower = <T extends { w: number | null; name: string }>(a: T, b: T) =>
+      (b.w ?? -Infinity) - (a.w ?? -Infinity) || a.name.localeCompare(b.name);
+    const mains = loads
+      .map((l) => ({ ...l, w: this._w(l.entity), name: l.label ?? this._name(l.entity) }))
+      .sort(byPower);
+    // visual rows: each load, then its contained loads indented below it
+    type Row = (typeof mains)[number] & { child: boolean; parentRow?: number };
+    const rows: Row[] = [];
+    for (const m of mains) {
+      const at = rows.length;
+      rows.push({ ...m, child: false });
+      const kids = (m.children ?? [])
+        .map((c) => ({ ...m, ...c, children: undefined, label: undefined, w: this._w(c.entity), name: this._name(c.entity) }))
+        .sort(byPower);
+      for (const k of kids) rows.push({ ...k, child: true, parentRow: at });
+    }
+    const path = (l: ListLoad, i: number) => `${l.trunk} V ${y0 + i * LOAD_ROW + 10} H ${LOAD_X0 - 3}`;
+    // a contained load's wagon rides into its parent's station and on along
+    // the dashed connector to its own row
+    const childPath = (l: Row, i: number) =>
+      `${path(l, l.parentRow ?? 0)} H ${LOAD_X0 + 4} V ${y0 + i * LOAD_ROW + 10} H ${LOAD_X0 + 10}`;
+    // power that stays at a parent: its value minus what its contained loads take
+    const own = (i: number): number | null => {
+      const w = rows[i].w;
+      if (w === null) return null;
+      const kids = rows.filter((r) => r.child && r.parentRow === i).reduce((s, r) => s + Math.max(r.w ?? 0, 0), 0);
+      return Math.max(w - kids, 0);
+    };
+    // "size" style: the dots run like a train down the feed line, one wagon
+    // per running load in row order (biggest first). At each station the front
+    // wagon uncouples and turns to its load; the rest rides on. A parent with
+    // contained loads takes several wagons into its station; the smaller ones
+    // ride on to the contained loads. All wagons share one period, so the
+    // train keeps its formation.
+    const wagonPower = (l: Row, i: number) => (l.child ? l.w : own(i));
+    const running = rows
+      .map((l, i) => ({ l, i, w: wagonPower(l, i) }))
+      .filter(({ w }) => w !== null && Math.abs(w) >= MIN_FLOW_W);
+    const wagons = running.map(({ l, i }, k) => ({
+      i,
+      begin: (k * TRAIN_GAP) / DOT_SPEED,
+      travel: pathLength(l.child ? childPath(l, i) : path(l, i)) / DOT_SPEED,
+    }));
+    const period = Math.max(1, ...wagons.map((w) => w.begin + w.travel)) + TRAIN_PAUSE;
+    const train = new Map(wagons.map((w) => [w.i, { period, begin: w.begin, travel: w.travel }] as const));
+    const lastMain = rows.reduce((last, r, i) => (r.child ? last : i), 0);
     return svg`
-      <line x1=${LOAD_X0 - 8} y1=${y0 + 2} x2=${LOAD_X0 - 8} y2=${y0 + loads.length * LOAD_ROW - 6}
+      <line x1=${BRACKET_X} y1=${y0 + 4} x2=${BRACKET_X} y2=${y0 + lastMain * LOAD_ROW + 10}
         stroke=${colour} stroke-width="1" stroke-opacity="0.6" />
-      ${loads.map((l, i) => {
+      ${rows.map((l, i) => {
         const y = y0 + i * LOAD_ROW;
-        const w = this._w(l.entity);
-        const idle = w === null || Math.abs(w) < MIN_FLOW_W;
+        const idle = l.w === null || Math.abs(l.w) < MIN_FLOW_W;
+        if (l.child) {
+          const top = y0 + (l.parentRow ?? 0) * LOAD_ROW + 19;
+          const tip = `${l.name} · enthalten in ${rows[l.parentRow ?? 0].name}`;
+          return svg`
+            <path d=${`M ${LOAD_X0 + 4} ${top} V ${y + 10} H ${LOAD_X0 + 10}`} fill="none" stroke=${colour}
+              stroke-opacity="0.6" stroke-dasharray="2 2" />
+            ${this._bySize ? this._dot(childPath(l, i), colour, l.w, true, 2.4, train.get(i)) : nothing}
+            <g opacity=${idle ? 0.45 : 0.85}>
+              ${this._nameBox(l.name, y, colour, tip, 12)}
+              ${this._box(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, 18, colour, fmtPower(l.w, this._loc), 9)}
+            </g>
+            ${this._box(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, 18, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5)}`;
+        }
+        const tip = l.tip ?? (l.source ? `${l.name} · gespeist von ${l.source}` : l.name);
         return svg`
-          <line x1=${LOAD_X0 - 8} y1=${y + 7} x2=${LOAD_X0 - 3} y2=${y + 7} stroke=${colour} stroke-opacity="0.6" />
-          ${this._dot(`${trunk} V ${y + 7} H ${LOAD_X0 - 3}`, colour, w, true, 2.4)}
+          <line x1=${BRACKET_X} y1=${y + 10} x2=${LOAD_X0 - 3} y2=${y + 10} stroke=${colour} stroke-opacity="0.6" />
+          ${this._bySize
+            ? this._dot(path(l, i), colour, own(i), true, 2.4, train.get(i))
+            : this._dot(path(l, i), colour, l.w, true, 2.4)}
           <g opacity=${idle ? 0.45 : 1}>
-            <text x=${LOAD_X0} y=${y + 10} class="small name">${shortName(this._name(l.entity), 22)}</text>
-            <text x=${LOAD_XP} y=${y + 10} text-anchor="end" class="small val">${fmtPower(w, this._loc)}</text>
+            ${this._nameBox(l.name, y, colour, tip)}
+            ${this._box(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, 18, colour, fmtPower(l.w, this._loc), 9)}
           </g>
-          <text x=${LOAD_X1} y=${y + 10} text-anchor="end" class="small">${fmtEnergy(num(this._s(l.today)), this._loc)}</text>`;
+          ${this._box(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, 18, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5)}`;
       })}
     `;
+  }
+
+  /** Name of a load in a rounded box; long names wrap to two smaller lines. */
+  private _nameBox(name: string, y: number, colour: string, tooltip = name, indent = 0): SVGTemplateResult {
+    const x = LOAD_X0 - 2 + indent;
+    const w = LOAD_XP - LOAD_PW - 4 - x;
+    const { lines, small } = indent ? fitLabel(name, 9, 12) : fitLabel(name, 11, 15);
+    return svg`<g>
+      <title>${tooltip}</title>
+      <rect x=${x} y=${y + 1} width=${w} height="18" rx="4" fill="none" stroke=${colour} stroke-width="1" />
+      ${small
+        ? svg`<text x=${x + 4} y=${y + 9} class="name" font-size="7.5">${lines[0]}</text>
+              <text x=${x + 4} y=${y + 17} class="name" font-size="7.5">${lines[1] ?? ""}</text>`
+        : svg`<text x=${x + 4} y=${y + 13.5} class="name" font-size="10">${lines[0]}</text>`}
+    </g>`;
   }
 
   private _groupTitle(y: number, colour: string, title: string, power: number | null, loads: Load[]): SVGTemplateResult {
@@ -321,38 +596,28 @@ export class EnergieflussCard extends LitElement {
       return v === null ? sum : (sum ?? 0) + v;
     }, null);
     return svg`
-      <text x=${LOAD_X0 - 8} y=${y} class="small grp" fill=${colour}>${title}</text>
-      <text x=${LOAD_XP} y=${y} text-anchor="end" class="small grp" fill=${colour}>${fmtPower(power, this._loc)}</text>
-      <text x=${LOAD_X1} y=${y} text-anchor="end" class="small grp" fill=${colour}>${fmtEnergy(today, this._loc)}</text>`;
+      <text x=${BRACKET_X} y=${y} class="small grp" fill=${colour}>${title}</text>
+      <text x=${LOAD_XP - LOAD_PW / 2} y=${y} text-anchor="middle" class="small grp" fill=${colour}>${fmtPower(power, this._loc)}</text>
+      <text x=${LOAD_X1 - LOAD_EW / 2} y=${y} text-anchor="middle" class="small grp" fill=${colour}>${fmtEnergy(today, this._loc)}</text>`;
   }
 
-  /** Total svg height needed for the load lists (at least the base height). */
+  /** Total svg height needed for the load lists and the batteries. */
   private get _viewH(): number {
-    const L = this._layout;
-    if (!L) return VIEW_H;
-    let h = 12;
-    for (const g of [L.loads.fixed, L.loads.flexible]) {
-      if (g.length) h += LOAD_TITLE + g.length * LOAD_ROW + 12;
-    }
-    return Math.max(VIEW_H, h);
+    if (!this._layout) return VIEW_H;
+    const groups = this._groups();
+    const last = groups[groups.length - 1];
+    const lists = last ? last.y0 + rowCount(last.loads) * LOAD_ROW + 8 : 0;
+    const shown = this._displayBatteries();
+    const batBottom = shown.length ? Math.max(...shown.map((b) => b.top)) + 138 : 0;
+    return Math.max(VIEW_H, lists, batBottom);
   }
 
   private _home(): SVGTemplateResult {
     const L = this._layout!;
     const c = this._c.home;
-    const cf = this._c.flexible;
     const home = this._own("home_power");
     const rest = this._own("unmeasured_power");
-    const fixed = L.loads.fixed;
-    const flexible = L.loads.flexible;
-
-    // Non-controllable list on top, controllable list below it.
-    const fixedTitleY = 22;
-    const fixedY0 = fixedTitleY + 6;
-    const flexTitleY = fixed.length ? fixedY0 + fixed.length * LOAD_ROW + 16 : fixedTitleY;
-    const flexY0 = flexTitleY + 6;
-    const fixedTrunk = `M 285 79 H 300 V ${fixedY0 + 8} H ${LOAD_X0 - 8}`;
-    const flexTrunk = `M 285 89 H 306 V ${flexY0 + 8} H ${LOAD_X0 - 8}`;
+    const groups = this._groups();
 
     return svg`
       ${this._icon(ICON_HOME, 226, 16, 48, c)}
@@ -364,19 +629,17 @@ export class EnergieflussCard extends LitElement {
               <text x="256" y="122" class="tiny val">${fmtPower(rest, this._loc)}</text>`
         : nothing}
       ${this._flow(`M ${INV_CX} 170 V 152 H 250 V 96`, c, home, true)}
-      ${fixed.length || flexible.length
-        ? svg`<text x=${LOAD_X1} y="9" text-anchor="end" class="tiny">${L.energy_period === "rolling24" ? "24 h" : "heute"}</text>`
+      ${groups.length
+        ? svg`<text x=${LOAD_X1 - LOAD_EW / 2} y="9" text-anchor="middle" class="tiny">${L.energy_period === "rolling24" ? "24 h" : "heute"}</text>`
         : nothing}
-      ${fixed.length
-        ? svg`${this._groupTitle(fixedTitleY, c, "Nicht steuerbar", this._own("fixed_power"), fixed)}
-              ${this._flow(fixedTrunk, c, this._own("fixed_power"), true, false)}
-              ${this._loadList(fixed, fixedY0, c, fixedTrunk)}`
-        : nothing}
-      ${flexible.length
-        ? svg`${this._groupTitle(flexTitleY, cf, "Steuerbar", this._own("flexible_power"), flexible)}
-              ${this._flow(flexTrunk, cf, this._own("flexible_power"), true, false)}
-              ${this._loadList(flexible, flexY0, cf, flexTrunk)}`
-        : nothing}
+      ${groups.map(
+        (g) => svg`
+          ${this._groupTitle(g.titleY, g.colour, g.title, g.power, g.loads)}
+          ${g.title === "Wallbox" ? this._icon(ICON_CAR, BRACKET_X + 46, g.titleY - 11, 14, g.colour) : nothing}
+          ${this._flow(g.trunk, g.colour, g.power, true, false)}
+          ${this._loadList(g.loads, g.y0, g.colour)}
+        `,
+      )}
     `;
   }
 
@@ -404,8 +667,12 @@ export class EnergieflussCard extends LitElement {
         : nothing}
       <text x="90" y="207" class="tiny">${label}</text>
       ${this._icon(ICON_TOWER, 27, 240, 40, c)}
-      ${imp !== null ? svg`<text x="10" y="298" class="small" fill=${c}>↓ ${fmtEnergy(imp, this._loc)} Bezug</text>` : nothing}
-      ${exp !== null ? svg`<text x="10" y="312" class="small">↑ ${fmtEnergy(exp, this._loc)} Einspeisung</text>` : nothing}
+      ${imp !== null
+        ? svg`<text x="10" y="292" class="small" fill=${c}>↓ ${fmtEnergy(imp, this._loc)}<tspan class="tiny"> Bezug</tspan></text>`
+        : nothing}
+      ${exp !== null
+        ? svg`<text x="10" y="305" class="small">↑ ${fmtEnergy(exp, this._loc)}<tspan class="tiny"> Einspeisung</tspan></text>`
+        : nothing}
     `;
   }
 

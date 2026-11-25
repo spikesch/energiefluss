@@ -23,18 +23,25 @@ SIMS = [
     # reports in kW and charging as NEGATIVE -> tests unit conversion + invert
     ("bat3_power", "Speicher 3 Leistung (kW, Laden negativ)", -3, 3, 0.05, "kW", -0.5, "power", "bat_inv"),
     ("bat3_soc", "Speicher 3 SoC", 0, 100, 1, "%", 85, "battery", None),
+    # 4th battery: one slider, exposed only as split charge/discharge sensors
+    ("bat4_power", "Speicher 4 (Laden +)", -2000, 2000, 10, "W", 300, "hidden", "bat"),
+    ("bat4_soc", "Speicher 4 SoC", 0, 100, 1, "%", 60, "battery", None),
     ("grundlast", "Grundlast (nicht gemessen)", 0, 1500, 10, "W", 250, "power", "load"),
     ("load_vava", "Vava", 0, 1500, 5, "W", 0, "power", "load"),
     ("load_tv", "TV", 0, 400, 5, "W", 95, "power", "load"),
     ("load_ecoflow", "Ecoflow", 0, 3000, 5, "W", 985, "power", "load"),
     ("load_neubau", "Neubau", 0, 3000, 5, "W", 124, "power", "load"),
+    # kettle on the Neubau sub-meter: the Neubau sensor shows both, the grid counts it once
+    ("load_wasserkocher", "Wasserkocher", 0, 2500, 10, "W", 0, "power", "load"),
     ("load_klima1", "Klima1", 0, 1500, 5, "W", 2, "power", "load"),
     ("load_klima3", "Klima3", 0, 2500, 5, "W", 894, "power", "load"),
-    ("load_kuehlschrank", "Kühlschrank", 0, 300, 5, "W", 80, "power", "load"),
+    ("load_kuehlschrank", "Kühlschrank Küche Keller", 0, 300, 5, "W", 80, "power", "load"),
     ("load_buero", "Büro (kW)", 0, 2, 0.01, "kW", 0.15, "power", "load"),
     ("aux_trockner", "Trockner", 0, 3000, 10, "W", 0, "power", "load"),
-    ("aux_waschmaschine", "Waschmaschine", 0, 2500, 10, "W", 0, "power", "load"),
+    ("aux_waschmaschine", "Waschmaschine Shelly Plug S", 0, 2500, 10, "W", 0, "power", "load"),
     ("aux_duschen", "Duschen (kW)", 0, 21, 0.1, "kW", 0, "power", "load"),
+    ("wallbox", "Wallbox Leistung", 0, 11000, 50, "W", 3700, "power", "load"),
+    ("auto_soc", "Auto Ladestand", 0, 100, 1, "%", 64, "battery", None),
     ("pv_today", "PV heute", 0, 80, 0.01, "kWh", 7.18, "energy", None),
     ("pv_rest", "PV Prognose Rest", 0, 80, 0.01, "kWh", 7.15, "energy", None),
     ("grid_import_today", "Netzbezug heute", 0, 80, 0.01, "kWh", 14.83, "energy", None),
@@ -93,12 +100,18 @@ def main() -> None:
         ]
     out += ["", "template:", "  - sensor:"]
     for key, name, _a, _b, _s, unit, _i, kind, _g in SIMS:
-        if key == "grundlast":
-            continue  # unmeasured on purpose
+        if key == "grundlast" or kind == "hidden":
+            continue  # unmeasured on purpose / exposed differently below
+        state = f"{{{{ states('input_number.sim_{key}') }}}}"
+        if key == "load_neubau":
+            state = (
+                "{{ ((states('input_number.sim_load_neubau') | float(0))"
+                " + (states('input_number.sim_load_wasserkocher') | float(0))) | round(1) }}"
+            )
         out += [
             f'      - name: "{name}"',
             f"        unique_id: sim_{key}",
-            f"        state: \"{{{{ states('input_number.sim_{key}') }}}}\"",
+            f"        state: \"{state}\"",
             f'        unit_of_measurement: "{unit}"',
         ]
         out += {
@@ -115,6 +128,28 @@ def main() -> None:
         "        device_class: power",
         "        state_class: measurement",
     ]
+    # Split sensors like Tibber Pulse (power / power_production) and like a
+    # battery that reports charging and discharging separately, plus a
+    # measured house consumption (base load + all loads).
+    grid = "(" + grid_template()[3:-3] + ")"
+    bat4 = watts_expr("bat4_power", "W")
+    house = " + ".join(watts_expr(k, u) for k, _n, _a, _b, _s, u, _i, _k, g in SIMS if g == "load")
+    for name, uid, expr in (
+        ("Tibber Bezug", "sim_tibber_power", f"[{grid}, 0] | max"),
+        ("Tibber Einspeisung", "sim_tibber_power_production", f"[-{grid}, 0] | max"),
+        ("Speicher 4 Laden", "sim_bat4_charge", f"[{bat4}, 0] | max"),
+        ("Speicher 4 Entladen", "sim_bat4_discharge", f"[-{bat4}, 0] | max"),
+        ("Haus Leistung gemessen", "sim_house_power", f"({house}) | round(1)"),
+    ):
+        out += [
+            f'      - name: "{name}"',
+            f"        unique_id: {uid}",
+            "        state: >-",
+            f"          {{{{ {expr} }}}}",
+            '        unit_of_measurement: "W"',
+            "        device_class: power",
+            "        state_class: measurement",
+        ]
     target = Path(__file__).parent / "config" / "configuration.yaml"
     target.write_text("\n".join(out) + "\n", encoding="utf-8", newline="\n")
     print(f"{len(SIMS)} sliders -> {target}")

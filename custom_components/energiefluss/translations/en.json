@@ -74,6 +74,42 @@
       },
       "home_24h": {
         "name": "House consumption 24 h"
+      },
+      "solar_today": {
+        "name": "PV yield today"
+      },
+      "solar_24h": {
+        "name": "PV yield 24 h"
+      },
+      "grid_import_today": {
+        "name": "Grid import today"
+      },
+      "grid_import_24h": {
+        "name": "Grid import 24 h"
+      },
+      "grid_export_today": {
+        "name": "Grid export today"
+      },
+      "grid_export_24h": {
+        "name": "Grid export 24 h"
+      },
+      "battery_charge_today": {
+        "name": "Battery charged today"
+      },
+      "battery_charge_24h": {
+        "name": "Battery charged 24 h"
+      },
+      "battery_discharge_today": {
+        "name": "Battery discharged today"
+      },
+      "battery_discharge_24h": {
+        "name": "Battery discharged 24 h"
+      },
+      "backup_power": {
+        "name": "Backup loads"
+      },
+      "wallbox_power": {
+        "name": "Wallbox"
       }
     }
   }

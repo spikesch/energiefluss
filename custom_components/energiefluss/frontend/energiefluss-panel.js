@@ -1,8 +1,8 @@
-import { i as g, A as u, b as i, a as f, n as p, r as d } from "./energiefluss-shared-B6IU_vVd.js";
-var m = Object.defineProperty, a = (c, t, e, n) => {
-  for (var s = void 0, o = c.length - 1, h; o >= 0; o--)
-    (h = c[o]) && (s = h(t, e, s) || s);
-  return s && m(t, e, s), s;
+import { i as g, A as u, b as s, a as f, n as p, r as d } from "./energiefluss-shared-Lu9uTvhu.js";
+var y = Object.defineProperty, a = (c, t, e, n) => {
+  for (var i = void 0, o = c.length - 1, h; o >= 0; o--)
+    (h = c[o]) && (i = h(t, e, i) || i);
+  return i && y(t, e, i), i;
 };
 const l = class l extends g {
   constructor() {
@@ -24,32 +24,32 @@ const l = class l extends g {
     n.setConfig({ type: "custom:energiefluss-card", entry_id: e }), n.hass = this.hass, t.replaceChildren(n), this._card = n;
   }
   render() {
-    const t = i`<div class="toolbar ${this.narrow ? "narrow" : ""}">
+    const t = s`<div class="toolbar ${this.narrow ? "narrow" : ""}">
       <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
       <div class="title">Energiefluss</div>
-      ${this._instances.length > 1 ? i`<select @change=${(e) => this._entryId = e.target.value}>
+      ${this._instances.length > 1 ? s`<select @change=${(e) => this._entryId = e.target.value}>
             ${this._instances.map(
-      (e) => i`<option value=${e.entry_id} ?selected=${e.entry_id === this._entryId}>${e.title}</option>`
+      (e) => s`<option value=${e.entry_id} ?selected=${e.entry_id === this._entryId}>${e.title}</option>`
     )}
           </select>` : u}
     </div>`;
-    return this._loaded ? this._entryId ? i`
+    return this._loaded ? this._entryId ? s`
       ${t}
       <div class="content ${this.narrow ? "narrow" : ""}">
         <div class="preview-col"><div id="preview"></div></div>
         <energiefluss-editor .hass=${this.hass} .entryId=${this._entryId}></energiefluss-editor>
       </div>
-    ` : i`${t}<div class="empty">
+    ` : s`${t}<div class="empty">
         Noch keine Anlage angelegt. Unter Einstellungen → Geräte &amp; Dienste → Integration hinzufügen →
         „Energiefluss“ eine Anlage anlegen.
-      </div>` : i`${t}<div class="empty">Lade …</div>`;
+      </div>` : s`${t}<div class="empty">Lade …</div>`;
   }
 };
 l.styles = f`
     :host {
       display: block;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow-x: clip; /* not hidden: that would break position: sticky */
       background: var(--primary-background-color);
       color: var(--primary-text-color);
     }

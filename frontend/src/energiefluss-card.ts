@@ -1,5 +1,7 @@
 import { LitElement, css, html, svg, nothing, type PropertyValues, type SVGTemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
+import { UPDATED_EVENT } from "./editor-core";
+import "./card-editor";
 import {
   centsPerKwh,
   fmtCents,
@@ -99,6 +101,30 @@ export class EnergieflussCard extends LitElement {
 
   static getStubConfig(): Partial<CardConfig> {
     return {};
+  }
+
+  /** Visual editor in the dashboard's "edit card" dialog. */
+  static getConfigElement(): HTMLElement {
+    return document.createElement("energiefluss-card-editor");
+  }
+
+  // Reload the layout when the instance was edited (editor page or card dialog).
+  private _onUpdated = (ev: Event): void => {
+    const entry = (ev as CustomEvent<{ entry_id?: string }>).detail?.entry_id;
+    if (!entry || !this._layout || entry === this._layout.entry_id) {
+      this._layout = undefined;
+      void this._loadLayout();
+    }
+  };
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener(UPDATED_EVENT, this._onUpdated);
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener(UPDATED_EVENT, this._onUpdated);
+    super.disconnectedCallback();
   }
 
   setConfig(config: CardConfig): void {

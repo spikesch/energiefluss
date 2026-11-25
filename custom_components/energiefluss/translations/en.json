@@ -1,0 +1,80 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Energiefluss",
+        "description": "Give your system a name. Afterwards assign the sensors in the visual editor: **Energiefluss** in the sidebar ([open]({url})).",
+        "data": {
+          "name": "System name"
+        }
+      }
+    },
+    "abort": {}
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Edit Energiefluss",
+        "description": "The system is edited in the visual editor: **[Open editor]({url})**\n\nThere is nothing else to set here."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "solar_power": {
+        "name": "PV power"
+      },
+      "grid_power": {
+        "name": "Grid power"
+      },
+      "grid_import": {
+        "name": "Grid import"
+      },
+      "grid_export": {
+        "name": "Grid export"
+      },
+      "home_power": {
+        "name": "House consumption"
+      },
+      "surplus": {
+        "name": "Surplus"
+      },
+      "battery_power": {
+        "name": "Battery power total"
+      },
+      "battery_soc": {
+        "name": "Battery state of charge total"
+      },
+      "battery_energy": {
+        "name": "Battery energy total"
+      },
+      "battery_n_power": {
+        "name": "{name} power"
+      },
+      "battery_n_soc": {
+        "name": "{name} state of charge"
+      },
+      "fixed_power": {
+        "name": "Non-controllable loads"
+      },
+      "flexible_power": {
+        "name": "Controllable loads"
+      },
+      "unmeasured_power": {
+        "name": "Unmeasured consumption"
+      },
+      "load_today": {
+        "name": "{name} today"
+      },
+      "load_24h": {
+        "name": "{name} 24 h"
+      },
+      "home_today": {
+        "name": "House consumption today"
+      },
+      "home_24h": {
+        "name": "House consumption 24 h"
+      }
+    }
+  }
+}

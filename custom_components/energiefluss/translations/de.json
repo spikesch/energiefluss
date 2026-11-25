@@ -1,0 +1,80 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Energiefluss einrichten",
+        "description": "Gib deiner Anlage einen Namen. Die Sensoren ordnest du danach im visuellen Editor zu: in der Seitenleiste unter **Energiefluss** ([öffnen]({url})).",
+        "data": {
+          "name": "Name der Anlage"
+        }
+      }
+    },
+    "abort": {}
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Energiefluss bearbeiten",
+        "description": "Die Anlage wird im visuellen Editor bearbeitet: **[Editor öffnen]({url})**\n\nHier gibt es nichts weiter einzustellen."
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "solar_power": {
+        "name": "PV-Leistung"
+      },
+      "grid_power": {
+        "name": "Netzleistung"
+      },
+      "grid_import": {
+        "name": "Netzbezug"
+      },
+      "grid_export": {
+        "name": "Einspeisung"
+      },
+      "home_power": {
+        "name": "Hausverbrauch"
+      },
+      "surplus": {
+        "name": "Überschuss"
+      },
+      "battery_power": {
+        "name": "Batterieleistung gesamt"
+      },
+      "battery_soc": {
+        "name": "Batterie-Ladestand gesamt"
+      },
+      "battery_energy": {
+        "name": "Batterie-Energie gesamt"
+      },
+      "battery_n_power": {
+        "name": "{name} Leistung"
+      },
+      "battery_n_soc": {
+        "name": "{name} Ladestand"
+      },
+      "fixed_power": {
+        "name": "Nicht steuerbare Verbraucher"
+      },
+      "flexible_power": {
+        "name": "Steuerbare Verbraucher"
+      },
+      "unmeasured_power": {
+        "name": "Nicht erfasster Verbrauch"
+      },
+      "load_today": {
+        "name": "{name} heute"
+      },
+      "load_24h": {
+        "name": "{name} 24 h"
+      },
+      "home_today": {
+        "name": "Hausverbrauch heute"
+      },
+      "home_24h": {
+        "name": "Hausverbrauch 24 h"
+      }
+    }
+  }
+}

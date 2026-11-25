@@ -1,0 +1,18 @@
+# Isolated Home Assistant test instance for Energiefluss development.
+# Runs on the NAS in /volume1/docker/energiefluss-dev, completely separate
+# from the live HA (own config folder, bridge network, own port 8125).
+services:
+  energiefluss-dev-ha:
+    container_name: energiefluss-dev-ha
+    # keep in step with the live HA version
+    image: homeassistant/home-assistant:2026.11
+    restart: unless-stopped
+    mem_limit: 1g
+    # default docker bridge: the NAS has no free address pools for new networks
+    network_mode: bridge
+    ports:
+      - "8125:8123"
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - ./config:/config

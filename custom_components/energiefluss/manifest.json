@@ -1,13 +1,20 @@
 {
   "domain": "energiefluss",
   "name": "Energiefluss",
-  "codeowners": [],
+  "codeowners": [
+    "@spikesch"
+  ],
   "config_flow": true,
-  "dependencies": ["frontend", "http", "panel_custom", "websocket_api"],
-  "documentation": "https://github.com/",
+  "dependencies": [
+    "frontend",
+    "http",
+    "panel_custom",
+    "websocket_api"
+  ],
+  "documentation": "https://github.com/spikesch/energiefluss",
   "integration_type": "service",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/",
+  "issue_tracker": "https://github.com/spikesch/energiefluss/issues",
   "requirements": [],
   "version": "0.1.0"
 }

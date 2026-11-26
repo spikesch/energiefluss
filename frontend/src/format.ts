@@ -170,10 +170,25 @@ export function dotRadius(w: number, maxW: number): number {
 
 /** Length of a path made of M / H / V commands (all our flow lines are). */
 export function pathLength(d: string): number {
-  const tokens = d.trim().split(/\s+/);
+  // absolute M, H, V, L, Q and C; curves are measured along 24 short chords
+  const tokens = d.trim().split(/[\s,]+/);
   let x = 0;
   let y = 0;
   let len = 0;
+  const curve = (pts: number[][]) => {
+    const at = (t: number) => {
+      // de Casteljau on the control points
+      let p = pts.map((q) => [...q]);
+      while (p.length > 1) p = p.slice(1).map((q, i) => [p[i][0] + (q[0] - p[i][0]) * t, p[i][1] + (q[1] - p[i][1]) * t]);
+      return p[0];
+    };
+    let [px, py] = pts[0];
+    for (let k = 1; k <= 24; k++) {
+      const [nx, ny] = at(k / 24);
+      len += Math.hypot(nx - px, ny - py);
+      [px, py] = [nx, ny];
+    }
+  };
   for (let i = 0; i < tokens.length; i++) {
     const t = tokens[i];
     if (t === "M") {
@@ -187,7 +202,57 @@ export function pathLength(d: string): number {
       const ny = +tokens[++i];
       len += Math.abs(ny - y);
       y = ny;
+    } else if (t === "L") {
+      const nx = +tokens[++i];
+      const ny = +tokens[++i];
+      len += Math.hypot(nx - x, ny - y);
+      [x, y] = [nx, ny];
+    } else if (t === "Q" || t === "C") {
+      const n = t === "Q" ? 2 : 3;
+      const pts = [[x, y]];
+      for (let k = 0; k < n; k++) pts.push([+tokens[++i], +tokens[++i]]);
+      curve(pts);
+      [x, y] = pts[n];
     }
   }
   return len;
+}
+
+/**
+ * Balls of a train for a power: up to 1000 W one small ball per started
+ * 100 W; above that one big ball per full 1000 W, then one small ball per
+ * started 100 W of the rest. Big balls come first. Each kind is capped at `max`.
+ */
+export function trainBalls(watts: number, max = 10): ("big" | "small")[] {
+  const w = Math.abs(watts);
+  const big = w > 1000 ? Math.floor(w / 1000) : 0;
+  // tiny epsilon: 1100 W must give one small ball, not two
+  const small = Math.max(big ? 0 : 1, Math.ceil((w - big * 1000) / 100 - 1e-9));
+  return [...Array(Math.min(big, max)).fill("big"), ...Array(Math.min(small, max)).fill("small")];
+}
+
+/** Shares of the sources (PV, battery, grid) in what the house gets right now. */
+export function sourceShares(solar: number | null, discharge: number | null, gridImport: number | null): number[] {
+  const parts = [solar, discharge, gridImport].map((w) => Math.max(0, w ?? 0));
+  const sum = parts.reduce((a, b) => a + b, 0);
+  return sum > 0 ? parts.map((w) => w / sum) : [1, 0, 0];
+}
+
+/**
+ * Which source each ball of a train shows: big and small balls are split
+ * separately by the shares (largest remainder), in source order, so a train
+ * reads "PV, then battery, then grid" within each size.
+ */
+export function colourBalls(kinds: ("big" | "small")[], shares: number[]): number[] {
+  const split = (n: number) => {
+    const raw = shares.map((s) => s * n);
+    const counts = raw.map(Math.floor);
+    const order = raw.map((r, i) => [r - Math.floor(r), i]).sort((a, b) => b[0] - a[0] || a[1] - b[1]);
+    const missing = n - counts.reduce((a, b) => a + b, 0);
+    for (let k = 0; k < missing; k++) counts[order[k][1]]++;
+    return counts.flatMap((c, i) => Array(c).fill(i) as number[]);
+  };
+  const big = split(kinds.filter((k) => k === "big").length);
+  const small = split(kinds.filter((k) => k === "small").length);
+  return kinds.map((k) => (k === "big" ? big.shift()! : small.shift()!));
 }

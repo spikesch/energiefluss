@@ -225,7 +225,7 @@ const WALLBOX_SCHEMA: Schema = [
 const LABELS: Record<string, string> = {
   wallbox_name: "Name",
   wallbox_power: "Ladeleistung",
-  wallbox_flexible: "Steuerbar (zählt zu den steuerbaren Verbrauchern)",
+  wallbox_flexible: "Zusatzverbraucher (sonst Grundlast)",
   wallbox_soc: "Ladestand Auto (optional)",
   title: "Name der Anlage",
   energy_period: "Tageswerte",
@@ -250,8 +250,8 @@ const LABELS: Record<string, string> = {
   grid_export_price: "Einspeisevergütung (Sensor)",
   grid_import_today: "Bezug heute",
   grid_export_today: "Einspeisung heute",
-  fixed_loads: "Nicht steuerbare Verbraucher",
-  flexible_loads: "Steuerbare Verbraucher",
+  fixed_loads: "Grundlast",
+  flexible_loads: "Zusatzverbraucher",
   home_power: "Hausverbrauch gemessen (optional)",
 };
 
@@ -635,7 +635,7 @@ export class EnergieflussEditor extends LitElement {
     if (!d.wallbox_power) return nothing;
     const soc = num(this._s(d.wallbox_soc));
     return html`<div class="live">
-      ${this._powerLine("Wallbox", d.wallbox_power, (d.wallbox_flexible ?? true) ? "steuerbar" : "nicht steuerbar")}
+      ${this._powerLine("Wallbox", d.wallbox_power, (d.wallbox_flexible ?? true) ? "Zusatzverbraucher" : "Grundlast")}
       ${d.wallbox_soc ? html`<div class="row"><span>Auto</span><span>${soc === null ? "–" : `${Math.round(soc)} %`}</span></div>` : nothing}
     </div>`;
   }
@@ -703,8 +703,8 @@ export class EnergieflussEditor extends LitElement {
 
   private _loadsLive(): TemplateResult | typeof nothing {
     const groups: [string, string[]][] = [
-      ["Nicht steuerbar", this._draft.fixed_loads ?? []],
-      ["Steuerbar", this._draft.flexible_loads ?? []],
+      ["Grundlast", this._draft.fixed_loads ?? []],
+      ["Zusatzverbraucher", this._draft.flexible_loads ?? []],
     ];
     if (!groups.some(([, l]) => l.length)) return nothing;
     const all = [
@@ -799,8 +799,8 @@ export class EnergieflussEditor extends LitElement {
               (l) => html`<div class="sg-row">
                 <div class="sg-text"><span>${l.name}</span><small>${l.source}</small></div>
                 <div class="sg-btns">
-                  <button @click=${() => this._applyLoad(l.entity, "fixed_loads")}>nicht steuerbar</button>
-                  <button @click=${() => this._applyLoad(l.entity, "flexible_loads")}>steuerbar</button>
+                  <button @click=${() => this._applyLoad(l.entity, "fixed_loads")}>Grundlast</button>
+                  <button @click=${() => this._applyLoad(l.entity, "flexible_loads")}>Zusatzverbraucher</button>
                 </div>
               </div>`,
             )}`
@@ -909,7 +909,7 @@ export class EnergieflussEditor extends LitElement {
           { wallbox_flexible: true, ...d } as Record<string, unknown>,
           (ev) => this._onForm(ev, ["wallbox_name", "wallbox_power", "wallbox_soc", "wallbox_flexible"]),
         )}${this._wallboxLive()}`,
-        "Optional. Hängt am Wechselrichter und zählt zum Hausverbrauch; standardmäßig als steuerbarer Verbraucher.",
+        "Optional. Hängt am Wechselrichter und zählt zum Hausverbrauch; standardmäßig als Zusatzverbraucher.",
       )}
       ${this._section(
         "Verbraucher",

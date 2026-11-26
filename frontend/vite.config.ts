@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        "energiefluss-card": "src/energiefluss-card.ts",
+        "energiefluss-card": "src/cards.ts",
         "energiefluss-panel": "src/energiefluss-panel.ts",
       },
       formats: ["es"],

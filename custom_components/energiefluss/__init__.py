@@ -145,6 +145,7 @@ def _describe(hass: HomeAssistant, entry: EnergieflussConfigEntry) -> dict[str, 
         "title": entry.title,
         "energy_period": hub.energy_period,
         "home_today": reg.async_get_entity_id("sensor", DOMAIN, home_today_unique_id(entry.entry_id)),
+        "unmeasured_today": total("unmeasured"),
         "entities": {
             key: own(key)
             for key in (

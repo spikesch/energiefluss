@@ -1,0 +1,6 @@
+{
+  "_comment": "Points in pixels of inverter-source.jpg: tips of the connectors. top = to the house, bottom = to the storage, left = PV, grid, wallbox (top to bottom).",
+  "top": [522, 208],
+  "bottom": [480, 748],
+  "left": [[258, 310], [258, 414], [258, 520]]
+}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Points in pixels of car-source.jpg. tank = outline of the car body (clips the liquid); floor_quad = the car's floor as far-front, near-front, near-rear, far-rear corner (sides parallel to the car's length and width; the liquid is a box standing on it); liquid_height = height of that box at 100 %; power_text / energy_text = start of the texts on the plate, edge_angle = angle of the plate's front edges in degrees; wallbox_top = where the feed line enters the wallbox.",
+  "tank": [[262,600],[258,560],[268,512],[300,478],[352,440],[372,425],[440,345],[480,318],[560,290],[640,272],[700,282],[765,318],[795,350],[828,400],[843,440],[838,468],[815,458],[790,458],[768,472],[756,500],[752,548],[560,628],[552,604],[530,590],[500,592],[480,610],[470,640],[468,688],[420,680],[300,640]],
+  "floor_quad": [[258,587],[440,680],[840,513],[658,420]],
+  "liquid_height": 200,
+  "power_text": [150,612],
+  "energy_text": [590,742],
+  "edge_angle": 27.4,
+  "wallbox_top": [890,310]
+}

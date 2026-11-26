@@ -55,10 +55,10 @@
         "name": "{name} Ladestand"
       },
       "fixed_power": {
-        "name": "Nicht steuerbare Verbraucher"
+        "name": "Grundlast"
       },
       "flexible_power": {
-        "name": "Steuerbare Verbraucher"
+        "name": "Zusatzverbraucher"
       },
       "unmeasured_power": {
         "name": "Nicht erfasster Verbrauch"
@@ -68,6 +68,12 @@
       },
       "load_24h": {
         "name": "{name} 24 h"
+      },
+      "unmeasured_today": {
+        "name": "Nicht erfasst heute"
+      },
+      "unmeasured_24h": {
+        "name": "Nicht erfasst 24 h"
       },
       "home_today": {
         "name": "Hausverbrauch heute"

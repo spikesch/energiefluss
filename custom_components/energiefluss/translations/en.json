@@ -69,6 +69,12 @@
       "load_24h": {
         "name": "{name} 24 h"
       },
+      "unmeasured_today": {
+        "name": "Not measured today"
+      },
+      "unmeasured_24h": {
+        "name": "Not measured 24 h"
+      },
       "home_today": {
         "name": "House consumption today"
       },

@@ -67,6 +67,7 @@ ENERGY_TOTALS: dict[str, tuple[str, str]] = {
     "__grid_export__": ("grid_export", "grid_export"),
     "__battery_charge__": ("battery_charge", "battery_charge"),
     "__battery_discharge__": ("battery_discharge", "battery_discharge"),
+    "__unmeasured__": ("unmeasured_power", "unmeasured"),
 }
 
 

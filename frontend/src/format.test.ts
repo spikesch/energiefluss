@@ -101,7 +101,7 @@ describe("fitLabel", () => {
   });
 });
 
-import { dotRadius, pathLength } from "./format";
+import { dotRadius, pathLength, trainBalls } from "./format";
 
 describe("size style", () => {
   it("bigger dots for more power, within limits", () => {
@@ -113,5 +113,76 @@ describe("size style", () => {
   it("measures M/H/V paths", () => {
     expect(pathLength("M 80 134 V 185 H 148")).toBe(51 + 68);
     expect(pathLength("M 10 10 H 10")).toBe(0);
+    expect(pathLength("M 0 0 L 3 4")).toBe(5);
+    // a straight curve is as long as the line
+    expect(pathLength("M 0 0 Q 50 0 100 0")).toBeCloseTo(100, 5);
+    expect(pathLength("M 0 0 C 10 0 20 0 30 0")).toBeCloseTo(30, 5);
+    // a sagging cable is a bit longer than its span
+    const sag = pathLength("M 0 0 Q 50 20 100 0");
+    expect(sag).toBeGreaterThan(100);
+    expect(sag).toBeLessThan(112);
+  });
+});
+
+import { ICONS, iconFor } from "./icons";
+
+describe("load icons", () => {
+  it("picks icons by name", () => {
+    expect(iconFor("Kühlschrank Küche Keller")).toBe("fridge");
+    expect(iconFor("Waschmaschine Shelly Plug S")).toBe("washMachine");
+    expect(iconFor("Klima3")).toBe("airConditioning");
+    expect(iconFor("Wasserkocher")).toBe("coffee");
+    expect(iconFor("Büro (kW)")).toBe("desktop");
+    expect(iconFor("Neubau")).toBe("plug");
+  });
+  it("loads the svg paths", () => {
+    expect(ICONS.fridge.length).toBeGreaterThan(1);
+    expect(ICONS.tower[0]).toMatch(/^M/);
+  });
+});
+
+describe("trainBalls", () => {
+  const count = (w: number) => {
+    const b = trainBalls(w);
+    return [b.filter((x) => x === "big").length, b.filter((x) => x === "small").length];
+  };
+  it("uses one small ball per started 100 W up to 1000 W", () => {
+    expect(count(5)).toEqual([0, 1]);
+    expect(count(100)).toEqual([0, 1]);
+    expect(count(101)).toEqual([0, 2]);
+    expect(count(1000)).toEqual([0, 10]);
+  });
+  it("uses big balls per full 1000 W above that, small ones for the rest", () => {
+    expect(count(1001)).toEqual([1, 1]);
+    expect(count(1100)).toEqual([1, 1]);
+    expect(count(2000)).toEqual([2, 0]);
+    expect(count(6500)).toEqual([6, 5]);
+    expect(count(-4070)).toEqual([4, 1]);
+  });
+  it("puts big balls first and caps each kind", () => {
+    expect(trainBalls(2150)).toEqual(["big", "big", "small", "small"]);
+    expect(count(25000)).toEqual([10, 0]);
+  });
+});
+
+import { colourBalls, sourceShares } from "./format";
+
+describe("source colours", () => {
+  it("splits what the house gets by source", () => {
+    expect(sourceShares(3000, 1000, 0)).toEqual([0.75, 0.25, 0]);
+    expect(sourceShares(null, null, null)).toEqual([1, 0, 0]);
+    expect(sourceShares(-5, 0, 500)).toEqual([0, 0, 1]);
+  });
+  it("gives each ball a source, big and small ones split separately", () => {
+    // 10 small balls, 50 % PV, 30 % battery, 20 % grid
+    expect(colourBalls(Array(10).fill("small"), [0.5, 0.3, 0.2])).toEqual([0, 0, 0, 0, 0, 1, 1, 1, 2, 2]);
+    // 2 big + 3 small, 60 / 40
+    expect(colourBalls(["big", "big", "small", "small", "small"], [0.6, 0, 0.4])).toEqual([0, 2, 0, 0, 2]);
+    // a single ball takes the biggest source
+    expect(colourBalls(["small"], [0.2, 0.5, 0.3])).toEqual([1]);
+    // several balls go to the largest remainders; every ball gets a source
+    const nine = colourBalls(Array(9).fill("small"), [0.44, 0.1, 0.46]);
+    expect(nine).toHaveLength(9);
+    expect(nine).toEqual([0, 0, 0, 0, 1, 2, 2, 2, 2]);
   });
 });

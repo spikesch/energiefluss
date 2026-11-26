@@ -118,7 +118,19 @@ python -m pytest
 
 ## License
 
-[MIT](LICENSE) © 2026 spikesch. Bundled third-party code and icons: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Copyright (C) 2026 spikesch
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+**GNU General Public License** as published by the Free Software Foundation, either **version 3** of
+the License, or (at your option) any later version. It is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See [LICENSE](LICENSE) for details.
+
+In short: you may use, change and share it; if you pass it on – changed or not – you must pass it on
+under the GPL with its source code.
+
+Bundled third-party code and icons keep their own (GPL-compatible) licenses: see
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 
@@ -130,3 +142,4 @@ python -m pytest
 - **Einrichtung:** über die Seite *Energiefluss* in der Seitenleiste oder den Editor der Karte; *Sensoren erkennen* schlägt passende Sensoren vor.
 - **Glas-Karte:** Kugelzüge zählen die Leistung (große Kugel je 1000 W, kleine je angefangene 100 W), Farben zeigen die Herkunft (gelb PV, grün Akku, blau Netz).
 - **Haftungsausschluss:** privates Hobbyprojekt ohne Verbindung zu den genannten Firmen; alle Werte sind berechnet und ohne Gewähr – nicht für Abrechnung oder Steuerung verwenden. Nutzung auf eigene Gefahr.
+- **Lizenz:** GNU GPL Version 3 oder später – nutzen, ändern und weitergeben erlaubt; wer es weitergibt, muss es ebenfalls unter der GPL und mit Quellcode weitergeben.

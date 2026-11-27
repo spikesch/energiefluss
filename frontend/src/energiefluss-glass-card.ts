@@ -294,10 +294,18 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return BAT_H + 12;
   }
 
-  // batteries closer together in height than in the classic look
+  // batteries closer together in height than in the classic look, and never
+  // running into the glass car on the left (5 batteries get a bit narrower)
   protected _displayBatteries() {
     const first = GLASS_STORE_Y + 50; // top of a raised battery
-    return super._displayBatteries().map((b) => ({ ...b, top: first + (b.top - first) * BAT_STAGGER }));
+    const shown = super._displayBatteries().map((b) => ({ ...b, top: first + (b.top - first) * BAT_STAGGER }));
+    if (!this._layout?.wallbox || !shown.length) return shown;
+    const minLeft = CAR_X + CAR_W + 4;
+    if (Math.min(...shown.map((b) => b.cx - b.w / 2)) >= minLeft) return shown;
+    const right = Math.max(...shown.map((b) => b.cx + b.w / 2));
+    const gap = 4;
+    const w = Math.min(shown[0].w, (right - minLeft - gap * (shown.length - 1)) / shown.length);
+    return shown.map((b, i) => ({ ...b, w, cx: minLeft + w / 2 + i * (w + gap) }));
   }
 
   // denser lists: rows of 15 instead of 22

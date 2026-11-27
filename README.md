@@ -90,11 +90,16 @@ Die Karten registriert die Integration selbst – eine eigene Lovelace-Ressource
 
 ## Einrichtung
 
-Der Einrichtungsdialog führt durch alles:
+Der Einrichtungsdialog geht Thema für Thema durch. Zu jedem Thema fragt er erst *Ja/Nein* und zeigt dann nur die passenden Sensoren, die Wattrio gefunden hat, mit ihren aktuellen Werten als Häkchen:
 
-1. **Name** der Anlage vergeben.
-2. **Gefundene Sensoren:** Wattrio sucht selbst nach PV, Netz, Batterien, Hausverbrauch, Wallbox und Strompreis und zeigt alles als Häkchenliste mit den aktuellen Werten. Nimm den Haken weg, wo etwas nicht zu deiner Anlage gehört.
-3. **Look wählen:** *Glas* oder *Klassik*.
+1. **Name** der Anlage.
+2. **Netz und Haus** (Netz-Sensor notfalls selbst wählen).
+3. **Photovoltaik?** – PV-Sensoren, je einer pro Feld auf dem Solarmodul.
+4. **Batteriespeicher?** – höchstens 5; „vermutlich dieselbe Batterie“ heißt: eine zweite Integration sieht denselben Speicher.
+5. **Notstrom?** (nur mit Speicher) – Geräte am Notstrom-Ausgang eines Speichers.
+6. **Wallbox / E-Auto?**
+7. **Dynamischer Stromtarif?** – Preis-Sensor, z. B. Tibber.
+8. **Look:** *Glas* oder *Klassik*.
 
 ## Nach der Installation
 
@@ -240,11 +245,16 @@ The cards are registered by the integration itself – there is no separate Love
 
 ## Setup
 
-The setup dialog walks you through everything:
+The setup dialog goes topic by topic. For each topic it first asks *yes/no* and then shows only the matching sensors Wattrio found, with current values, as a checklist:
 
-1. Give the system a **name**.
-2. **Detected sensors:** Wattrio looks for PV, grid, batteries, house consumption, wallbox and electricity price by itself and shows everything as a checklist with the current values. Untick what does not belong to your system.
-3. **Pick a look:** *Glas* or *Klassik*.
+1. **Name** of the system.
+2. **Grid and house** (pick the grid sensor yourself if needed).
+3. **Solar?** – PV sensors, one per field on the solar panel.
+4. **Batteries?** – at most 5; "probably the same battery" means a second integration sees the same one.
+5. **Backup power?** (only with batteries) – devices on a battery's backup output.
+6. **Wallbox / EV?**
+7. **Dynamic tariff?** – price sensor, e.g. Tibber.
+8. **Look:** *Glas* or *Klassik*.
 
 ## After installation
 

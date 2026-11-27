@@ -2,6 +2,18 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.2
+
+**Deutsch**
+
+- Einrichtung Thema für Thema: Netz und Haus, dann jeweils mit Ja/Nein Photovoltaik, Batteriespeicher, Notstrom, Wallbox / E-Auto und dynamischer Stromtarif. Jedes Thema zeigt nur die dazu passenden Sensoren; fehlende kann man direkt selbst wählen.
+- Glas-Karte: Mit Auto beginnt die Batteriereihe immer rechts neben Auto und Wallbox (bei 5 Speichern etwas schmaler), statt in das Auto zu ragen.
+
+**English**
+
+- Setup topic by topic: grid and house, then yes/no for solar, batteries, backup power, wallbox / EV and dynamic tariff. Each topic shows only its matching sensors; missing ones can be picked right there.
+- Glass card: with a car, the battery row always starts right of the car and wallbox (a bit narrower with 5 batteries) instead of running into the car.
+
 ## 0.4.1
 
 **Deutsch**

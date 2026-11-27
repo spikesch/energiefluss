@@ -9,6 +9,10 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_CHECKED,
+    CONF_TOPICS,
+    SECTIONS,
+    TOPICS,
     CONF_LOOK,
     LOOK_GLASS,
     LOOKS,
@@ -102,6 +106,8 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_WALLBOX_FLEXIBLE, default=True): cv.boolean,
         vol.Optional(CONF_ENERGY_PERIOD, default=PERIOD_MIDNIGHT): vol.In([PERIOD_MIDNIGHT, PERIOD_ROLLING]),
         vol.Optional(CONF_LOOK, default=LOOK_GLASS): vol.In(LOOKS),
+        vol.Optional(CONF_TOPICS): vol.Any(None, [vol.In(TOPICS)]),
+        vol.Optional(CONF_CHECKED): vol.Any(None, [vol.In(SECTIONS)]),
     },
     extra=vol.REMOVE_EXTRA,
 )

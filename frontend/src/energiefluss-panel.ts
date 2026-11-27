@@ -8,7 +8,7 @@
 
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
-import { type Hass, type Instance } from "./editor-core";
+import { guideOpen, UPDATED_EVENT, type Hass, type Instance } from "./editor-core";
 import "./editor-core";
 import "./cards";
 
@@ -45,11 +45,26 @@ export class EnergieflussPanel extends LitElement {
   @state() private _loaded = false;
   @state() private _look: Look = "glass";
   @state() private _view: View = "card";
-  @state() private _saving = false;
   private _options: Record<string, unknown> = {};
   private _card?: CardElement;
   private _host?: Element;
   private _cardKey?: string;
+
+  // the look is switched in the settings (Allgemein): follow it
+  private _onUpdated = (ev: Event): void => {
+    const id = (ev as CustomEvent<{ entry_id?: string }>).detail?.entry_id;
+    if (id && id === this._entryId) void this._select(id, false);
+  };
+
+  connectedCallback(): void {
+    super.connectedCallback();
+    window.addEventListener(UPDATED_EVENT, this._onUpdated);
+  }
+
+  disconnectedCallback(): void {
+    window.removeEventListener(UPDATED_EVENT, this._onUpdated);
+    super.disconnectedCallback();
+  }
 
   protected async firstUpdated(): Promise<void> {
     if (!this.hass) return;
@@ -64,20 +79,8 @@ export class EnergieflussPanel extends LitElement {
     const res = await this.hass!.callWS<EntryOptions>({ type: "energiefluss/get_options", entry_id: entryId });
     this._options = res.options ?? {};
     this._look = this._options.look === "classic" ? "classic" : "glass";
-    if (chooseView) this._view = configured(this._options) ? "card" : "settings";
+    if (chooseView) this._view = !configured(this._options) || guideOpen(this._options) ? "settings" : "card";
     this._entryId = entryId;
-  }
-
-  private async _setLook(look: Look): Promise<void> {
-    if (!this.hass || !this._entryId || look === this._look || this._saving) return;
-    this._look = look; // show it at once; the instance reloads in the background
-    this._saving = true;
-    try {
-      await this.hass.callWS({ type: "energiefluss/set_look", entry_id: this._entryId, look });
-      this._options = { ...this._options, look };
-    } finally {
-      this._saving = false;
-    }
   }
 
   private async _toggleView(): Promise<void> {
@@ -125,18 +128,7 @@ export class EnergieflussPanel extends LitElement {
           </select>`
         : nothing}
       ${this._entryId
-        ? html`<div class="looks" role="group" aria-label="Look">
-              ${(["glass", "classic"] as Look[]).map(
-                (l) => html`<button
-                  class=${this._look === l ? "on" : ""}
-                  ?disabled=${this._saving}
-                  @click=${() => void this._setLook(l)}
-                >
-                  ${l === "glass" ? "Glas" : "Klassik"}
-                </button>`,
-              )}
-            </div>
-            <button class="settings" @click=${() => void this._toggleView()}>
+        ? html`<button class="settings" @click=${() => void this._toggleView()}>
               ${settings ? "Fertig" : "Einstellungen"}
             </button>`
         : nothing}

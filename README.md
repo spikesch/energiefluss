@@ -90,25 +90,18 @@ Die Karten registriert die Integration selbst – eine eigene Lovelace-Ressource
 
 ## Einrichtung
 
-Der Einrichtungsdialog geht Thema für Thema durch. Zu jedem Thema fragt er erst *Ja/Nein* und zeigt dann nur die passenden Sensoren, die Wattrio gefunden hat, mit ihren aktuellen Werten als Häkchen:
-
-1. **Name** der Anlage.
-2. **Netz und Haus** (Netz-Sensor notfalls selbst wählen).
-3. **Photovoltaik?** – PV-Sensoren, je einer pro Feld auf dem Solarmodul.
-4. **Batteriespeicher?** – höchstens 5; „vermutlich dieselbe Batterie“ heißt: eine zweite Integration sieht denselben Speicher.
-5. **Notstrom?** (nur mit Speicher) – Geräte am Notstrom-Ausgang eines Speichers.
-6. **Wallbox / E-Auto?**
-7. **Dynamischer Stromtarif?** – Preis-Sensor, z. B. Tibber.
-8. **Look:** *Glas* oder *Klassik*.
+Der Einrichtungsdialog hat nur eine Seite: **Name** der Anlage und vier Schalter – *Batteriespeicher*, *Solarpanele*, *Dynamischer Stromtarif*, *E-Auto / Wallbox*. Für Netz und jedes „Ja“ übernimmt Wattrio die passenden Sensoren, die es selbst findet. Die Grafik läuft damit sofort.
 
 ## Nach der Installation
 
-Eine Benachrichtigung (Glocke unten links) sagt dir, wo alles ist:
+**Wattrio** steht ganz oben in der Seitenleiste und öffnet zuerst die Einstellungen, links die Grafik:
 
-- **Wattrio** steht ganz oben in der Seitenleiste und zeigt den Energiefluss. Oben schaltest du zwischen **Glas** und **Klassik** um.
-- **Einstellungen** (oben rechts auf der Wattrio-Seite): Sensoren prüfen oder ändern (**Sensoren erkennen** schlägt sie erneut vor) und deine Verbraucher in **Grundlast** und **Zusatzverbraucher** einsortieren.
+- Abschnitt für Abschnitt – *Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher*: prüfen, unten **Speichern**. Der Abschnitt bekommt ein ✓, klappt zu, der nächste geht auf.
+- Jeder Abschnitt fragt *Ja / Nein* und hat sein eigenes **Sensoren erkennen**, das nur dazu passende Sensoren vorschlägt. Notstrom stellst du direkt bei der jeweiligen Batterie ein, bei Solar höchstens 4 Stränge.
+- Unter **Allgemein** schaltest du den Look zwischen **Glas** (Standard) und **Klassik** um.
+- Sind alle Abschnitte durch, zeigt die Wattrio-Seite gleich den Energiefluss; *Einstellungen* oben rechts.
 - **Karte auf einem eigenen Dashboard:** Dashboard bearbeiten → *Karte hinzufügen* → nach **Wattrio** suchen → *Wattrio Energiefluss Glas* oder *Klassik*. Erscheint sie nicht in der Liste, die Seite einmal neu laden.
-- Die Integration legt nur Sensoren für das an, was eingerichtet ist. Kommt später etwas hinzu (z. B. ein Akku), entstehen dessen Sensoren beim Speichern.
+- Die Integration legt nur Sensoren für das an, was eingerichtet ist.
 
 ## Was die Integration selbst berechnet
 
@@ -245,25 +238,18 @@ The cards are registered by the integration itself – there is no separate Love
 
 ## Setup
 
-The setup dialog goes topic by topic. For each topic it first asks *yes/no* and then shows only the matching sensors Wattrio found, with current values, as a checklist:
-
-1. **Name** of the system.
-2. **Grid and house** (pick the grid sensor yourself if needed).
-3. **Solar?** – PV sensors, one per field on the solar panel.
-4. **Batteries?** – at most 5; "probably the same battery" means a second integration sees the same one.
-5. **Backup power?** (only with batteries) – devices on a battery's backup output.
-6. **Wallbox / EV?**
-7. **Dynamic tariff?** – price sensor, e.g. Tibber.
-8. **Look:** *Glas* or *Klassik*.
+The setup dialog has a single page: the system's **name** and four switches – *batteries*, *solar panels*, *dynamic tariff*, *electric car / wallbox*. For the grid and every "yes" Wattrio applies the matching sensors it finds itself, so the graphic runs right away.
 
 ## After installation
 
-A notification (bell, bottom left) tells you where everything is:
+**Wattrio** sits at the top of the sidebar and opens the settings first, the graphic on the left:
 
-- **Wattrio** sits at the top of the sidebar and shows the energy flow. Switch between **Glas** and **Klassik** at the top.
-- **Einstellungen** (settings, top right on the Wattrio page): check or change the sensors (**Sensoren erkennen** suggests them again) and sort your loads into **Grundlast** (base load) and **Zusatzverbraucher** (additional loads).
+- Section by section – *Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher*: check, then **Speichern** (save) at the bottom. The section gets a ✓, closes, and the next one opens.
+- Every section asks *Ja / Nein* (yes / no) and has its own **Sensoren erkennen** (detect sensors) suggesting only matching sensors. Backup power is set right at each battery; solar takes at most 4 strings.
+- Under **Allgemein** (general) switch the look between **Glas** (default) and **Klassik**.
+- Once all sections are done, the Wattrio page shows the energy flow straight away; *Einstellungen* (settings) top right.
 - **Card on your own dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. If it is not in the list, reload the page once.
-- The integration only creates sensors for what is set up. Add something later (e.g. a battery) and its sensors appear when you save.
+- The integration only creates sensors for what is set up.
 
 ## What the integration calculates itself
 

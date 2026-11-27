@@ -105,4 +105,12 @@ LOOK_GLASS = "glass"
 LOOK_CLASSIC = "classic"
 LOOKS = (LOOK_GLASS, LOOK_CLASSIC)
 FIRST_SETUP = "first_setup"  # entry.data flag: notify and put Wattrio on top once
+
+# First setup: what the system has (yes/no in the setup dialog) and which
+# settings sections the user already checked and saved (guided settings).
+CONF_TOPICS = "topics"
+CONF_CHECKED = "checked"
+TOPICS = ("battery", "solar", "tariff", "wallbox")
+SECTIONS = ("general", "grid", "battery", "solar", "tariff", "wallbox", "loads")
+MAX_STRINGS = 4  # the glass solar panel has four fields
 CARD_URL_BASE = "/energiefluss_static"

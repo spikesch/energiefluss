@@ -1,92 +1,80 @@
-import { i as _, A as p, b as o, a as u, n as g, r as d } from "./energiefluss-shared-BvUILOV2.js";
-var y = Object.defineProperty, n = (l, s, e, t) => {
-  for (var r = void 0, a = l.length - 1, h; a >= 0; a--)
-    (h = l[a]) && (r = h(s, e, r) || r);
-  return r && y(s, e, r), r;
+import { i as u, U as h, g as f, A as g, b as n, a as v, n as _, r as d } from "./energiefluss-shared-D41eC295.js";
+var y = Object.defineProperty, a = (l, s, t, e) => {
+  for (var i = void 0, o = l.length - 1, p; o >= 0; o--)
+    (p = l[o]) && (i = p(s, t, i) || i);
+  return i && y(s, t, i), i;
 };
-const f = { glass: "energiefluss-glass-card", classic: "energiefluss-card" };
-function v(l) {
-  const s = (e) => {
-    const t = l[e];
-    return Array.isArray(t) ? t.length > 0 : !!t;
+const w = { glass: "energiefluss-glass-card", classic: "energiefluss-card" };
+function x(l) {
+  const s = (t) => {
+    const e = l[t];
+    return Array.isArray(e) ? e.length > 0 : !!e;
   };
   return ["solar_strings", "grid_power", "grid_import_power", "grid_export_power", "batteries", "home_power"].some(s);
 }
-const c = class c extends _ {
+const c = class c extends u {
   constructor() {
-    super(...arguments), this.narrow = !1, this._instances = [], this._loaded = !1, this._look = "glass", this._view = "card", this._saving = !1, this._options = {};
+    super(...arguments), this.narrow = !1, this._instances = [], this._loaded = !1, this._look = "glass", this._view = "card", this._options = {}, this._onUpdated = (s) => {
+      const t = s.detail?.entry_id;
+      t && t === this._entryId && this._select(t, !1);
+    };
+  }
+  connectedCallback() {
+    super.connectedCallback(), window.addEventListener(h, this._onUpdated);
+  }
+  disconnectedCallback() {
+    window.removeEventListener(h, this._onUpdated), super.disconnectedCallback();
   }
   async firstUpdated() {
     if (!this.hass) return;
     this._instances = await this.hass.callWS({ type: "energiefluss/instances" });
-    const s = new URLSearchParams(location.search).get("entry"), e = (this._instances.find((t) => t.entry_id === s) ?? this._instances[0])?.entry_id;
-    e && await this._select(e, !0), this._loaded = !0;
+    const s = new URLSearchParams(location.search).get("entry"), t = (this._instances.find((e) => e.entry_id === s) ?? this._instances[0])?.entry_id;
+    t && await this._select(t, !0), this._loaded = !0;
   }
-  async _select(s, e) {
-    const t = await this.hass.callWS({ type: "energiefluss/get_options", entry_id: s });
-    this._options = t.options ?? {}, this._look = this._options.look === "classic" ? "classic" : "glass", e && (this._view = v(this._options) ? "card" : "settings"), this._entryId = s;
-  }
-  async _setLook(s) {
-    if (!(!this.hass || !this._entryId || s === this._look || this._saving)) {
-      this._look = s, this._saving = !0;
-      try {
-        await this.hass.callWS({ type: "energiefluss/set_look", entry_id: this._entryId, look: s }), this._options = { ...this._options, look: s };
-      } finally {
-        this._saving = !1;
-      }
-    }
+  async _select(s, t) {
+    const e = await this.hass.callWS({ type: "energiefluss/get_options", entry_id: s });
+    this._options = e.options ?? {}, this._look = this._options.look === "classic" ? "classic" : "glass", t && (this._view = !x(this._options) || f(this._options) ? "settings" : "card"), this._entryId = s;
   }
   async _toggleView() {
     this._view === "settings" && this._entryId ? (await this._select(this._entryId, !1), this._view = "card") : this._view = "settings";
   }
   updated(s) {
-    const e = this.renderRoot.querySelector("#card"), t = `${this._entryId}|${this._look}`;
-    e && this._entryId && (e !== this._host || t !== this._cardKey) ? (this._host = e, this._cardKey = t, this._mountCard(e, this._entryId, this._look)) : s.has("hass") && this._card && (this._card.hass = this.hass);
+    const t = this.renderRoot.querySelector("#card"), e = `${this._entryId}|${this._look}`;
+    t && this._entryId && (t !== this._host || e !== this._cardKey) ? (this._host = t, this._cardKey = e, this._mountCard(t, this._entryId, this._look)) : s.has("hass") && this._card && (this._card.hass = this.hass);
   }
-  async _mountCard(s, e, t) {
-    const r = f[t];
-    await customElements.whenDefined(r);
-    const a = document.createElement(r);
-    a.setConfig({ type: `custom:${r}`, entry_id: e }), a.hass = this.hass, s.replaceChildren(a), this._card = a;
+  async _mountCard(s, t, e) {
+    const i = w[e];
+    await customElements.whenDefined(i);
+    const o = document.createElement(i);
+    o.setConfig({ type: `custom:${i}`, entry_id: t }), o.hass = this.hass, s.replaceChildren(o), this._card = o;
   }
   render() {
-    const s = this._view === "settings", e = o`<div class="toolbar ${this.narrow ? "narrow" : ""}">
+    const s = this._view === "settings", t = n`<div class="toolbar ${this.narrow ? "narrow" : ""}">
       <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
       <div class="title">Wattrio</div>
-      ${this._instances.length > 1 ? o`<select @change=${(t) => void this._select(t.target.value, !0)}>
+      ${this._instances.length > 1 ? n`<select @change=${(e) => void this._select(e.target.value, !0)}>
             ${this._instances.map(
-      (t) => o`<option value=${t.entry_id} ?selected=${t.entry_id === this._entryId}>${t.title}</option>`
+      (e) => n`<option value=${e.entry_id} ?selected=${e.entry_id === this._entryId}>${e.title}</option>`
     )}
-          </select>` : p}
-      ${this._entryId ? o`<div class="looks" role="group" aria-label="Look">
-              ${["glass", "classic"].map(
-      (t) => o`<button
-                  class=${this._look === t ? "on" : ""}
-                  ?disabled=${this._saving}
-                  @click=${() => void this._setLook(t)}
-                >
-                  ${t === "glass" ? "Glas" : "Klassik"}
-                </button>`
-    )}
-            </div>
-            <button class="settings" @click=${() => void this._toggleView()}>
+          </select>` : g}
+      ${this._entryId ? n`<button class="settings" @click=${() => void this._toggleView()}>
               ${s ? "Fertig" : "Einstellungen"}
-            </button>` : p}
+            </button>` : g}
     </div>`;
-    return this._loaded ? this._entryId ? s ? o`
-      ${e}
+    return this._loaded ? this._entryId ? s ? n`
+      ${t}
       <div class="content ${this.narrow ? "narrow" : ""}">
         <div class="preview-col"><div id="card"></div></div>
         <energiefluss-editor .hass=${this.hass} .entryId=${this._entryId}></energiefluss-editor>
       </div>
-    ` : o`${e}
-        <div class="view"><div id="card"></div></div>` : o`${e}<div class="empty">
+    ` : n`${t}
+        <div class="view"><div id="card"></div></div>` : n`${t}<div class="empty">
         Noch keine Anlage angelegt. Unter Einstellungen → Geräte &amp; Dienste → Integration hinzufügen →
         „Wattrio“ eine Anlage anlegen.
-      </div>` : o`${e}<div class="empty">Lade …</div>`;
+      </div>` : n`${t}<div class="empty">Lade …</div>`;
   }
 };
-c.styles = u`
+c.styles = v`
     :host {
       display: block;
       min-height: 100vh;
@@ -194,32 +182,29 @@ c.styles = u`
       color: var(--secondary-text-color);
     }
   `;
-let i = c;
-n([
-  g({ attribute: !1 })
-], i.prototype, "hass");
-n([
-  g({ type: Boolean })
-], i.prototype, "narrow");
-n([
+let r = c;
+a([
+  _({ attribute: !1 })
+], r.prototype, "hass");
+a([
+  _({ type: Boolean })
+], r.prototype, "narrow");
+a([
   d()
-], i.prototype, "_instances");
-n([
+], r.prototype, "_instances");
+a([
   d()
-], i.prototype, "_entryId");
-n([
+], r.prototype, "_entryId");
+a([
   d()
-], i.prototype, "_loaded");
-n([
+], r.prototype, "_loaded");
+a([
   d()
-], i.prototype, "_look");
-n([
+], r.prototype, "_look");
+a([
   d()
-], i.prototype, "_view");
-n([
-  d()
-], i.prototype, "_saving");
-customElements.get("energiefluss-panel") || customElements.define("energiefluss-panel", i);
+], r.prototype, "_view");
+customElements.get("energiefluss-panel") || customElements.define("energiefluss-panel", r);
 export {
-  i as EnergieflussPanel
+  r as EnergieflussPanel
 };

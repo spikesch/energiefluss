@@ -3,111 +3,15 @@
     "step": {
       "user": {
         "title": "Wattrio Energiefluss einrichten",
-        "description": "Gib deiner Anlage einen Namen. Danach gehen wir Thema für Thema durch – Wattrio sucht jeweils selbst die passenden Sensoren.",
+        "description": "Gib deiner Anlage einen Namen und sag kurz, was sie hat. Wattrio sucht die passenden Sensoren selbst – prüfen kannst du sie gleich danach Abschnitt für Abschnitt.",
         "data": {
-          "name": "Name der Anlage"
-        }
-      },
-      "grid": {
-        "title": "Stromnetz und Haus",
-        "description": "{found} Das hat Wattrio für Netz und Hausverbrauch gefunden, mit den aktuellen Werten. Nimm den Haken weg, wo etwas nicht passt.",
-        "data": {
-          "use": "Übernehmen",
-          "grid_power": "Netz-Sensor selbst wählen (+ Bezug, − Einspeisung)"
-        }
-      },
-      "solar": {
-        "title": "Photovoltaik",
-        "description": "Hast du eine PV-Anlage?",
-        "menu_options": {
-          "solar_pick": "Ja",
-          "battery": "Nein"
-        }
-      },
-      "solar_pick": {
-        "title": "Photovoltaik",
-        "description": "{found} Jeder Sensor wird ein Feld auf dem Solarmodul (z. B. je Dachseite oder String).",
-        "data": {
-          "use": "Übernehmen",
-          "more": "Weitere PV-Sensoren"
-        }
-      },
-      "battery": {
-        "title": "Batteriespeicher",
-        "description": "Hast du einen oder mehrere Batteriespeicher?",
-        "menu_options": {
-          "battery_pick": "Ja",
-          "wallbox": "Nein"
-        }
-      },
-      "battery_pick": {
-        "title": "Batteriespeicher",
-        "description": "{found} Höchstens {max} Speicher. Steht „vermutlich dieselbe Batterie“ dabei, sieht eine zweite Integration denselben Speicher – dann nur einen anhaken. Weitere Speicher kannst du später unter Einstellungen hinzufügen.",
-        "data": {
-          "use": "Übernehmen"
-        }
-      },
-      "backup": {
-        "title": "Notstrom",
-        "description": "Hängen Geräte an einem Notstrom-Ausgang eines Speichers (z. B. eine Klima an der EcoFlow)?",
-        "menu_options": {
-          "backup_pick": "Ja",
-          "wallbox": "Nein"
-        }
-      },
-      "backup_pick": {
-        "title": "Notstrom",
-        "description": "Wähle den Speicher und die Leistungs-Sensoren der Geräte an seinem Notstrom-Ausgang.",
-        "data": {
-          "battery": "Speicher",
-          "backup_loads": "Geräte am Notstrom",
-          "backup_only": "Speicher gibt nur über Notstrom ab (nicht ins Haus)"
-        }
-      },
-      "wallbox": {
-        "title": "Wallbox / E-Auto",
-        "description": "Hast du eine Wallbox oder lädst du ein E-Auto?",
-        "menu_options": {
-          "wallbox_pick": "Ja",
-          "tariff": "Nein"
-        }
-      },
-      "wallbox_pick": {
-        "title": "Wallbox / E-Auto",
-        "description": "{found}",
-        "data": {
-          "use": "Übernehmen",
-          "wallbox_power": "Ladeleistung selbst wählen"
-        }
-      },
-      "tariff": {
-        "title": "Dynamischer Stromtarif",
-        "description": "Hast du einen dynamischen Stromtarif (z. B. Tibber) mit einem Preis-Sensor?",
-        "menu_options": {
-          "tariff_pick": "Ja",
-          "look": "Nein"
-        }
-      },
-      "tariff_pick": {
-        "title": "Dynamischer Stromtarif",
-        "description": "{found}",
-        "data": {
-          "use": "Übernehmen",
-          "grid_price": "Preis-Sensor selbst wählen"
-        }
-      },
-      "look": {
-        "title": "Welcher Look?",
-        "description": "Die Karte erscheint sofort auf der Seite **Wattrio** ganz oben in der Seitenleiste. Den Look kannst du dort jederzeit umschalten.",
-        "data": {
-          "look": "Look"
+          "name": "Name der Anlage",
+          "battery": "Batteriespeicher",
+          "solar": "Solarpanele",
+          "tariff": "Dynamischer Stromtarif (z. B. Tibber)",
+          "wallbox": "E-Auto / Wallbox"
         }
       }
-    },
-    "error": {
-      "too_many_batteries": "Höchstens {max} Batterien – bitte bei einigen den Haken wegnehmen.",
-      "invalid_selection": "Diese Auswahl passt nicht zusammen – bitte bei einem Eintrag den Haken wegnehmen.",
-      "backup_only_needs_split": "„Nur über Notstrom“ geht nur bei Speichern mit getrennten Sensoren für Laden und Entladen."
     },
     "abort": {}
   },
@@ -216,14 +120,6 @@
       },
       "wallbox_power": {
         "name": "Wallbox"
-      }
-    }
-  },
-  "selector": {
-    "look": {
-      "options": {
-        "glass": "Glas – 2.5D-Glas-Look mit Glasrohren und leuchtenden Kugeln",
-        "classic": "Klassik – flach und schlicht"
       }
     }
   }

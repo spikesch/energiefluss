@@ -2,6 +2,24 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.3
+
+**Deutsch**
+
+- Ersteinrichtung auf einer Seite: Name und vier Ja/Nein-Schalter (Batterien, Solar, dynamischer Tarif, E-Auto). Wattrio übernimmt die gefundenen Sensoren, die Grafik läuft sofort.
+- Danach führt die Wattrio-Seite durch die Einstellungen: Abschnitt für Abschnitt prüfen und **Speichern**, ✓, der nächste klappt auf.
+- Einstellungen in zugeklappten Abschnitten mit *Ja / Nein* und eigenem **Sensoren erkennen**, das nur Passendes vorschlägt. Reihenfolge: Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher.
+- Notstrom direkt bei jeder Batterie („Hat diese Batterie Notstrom-Steckdosen?“). Der Strompreis steht unter „Dynamischer Stromtarif“.
+- Glas ist Standard; Klassik wählst du unter Einstellungen → Allgemein.
+
+**English**
+
+- First setup on one page: name and four yes/no switches (batteries, solar, dynamic tariff, EV). Wattrio applies the sensors it finds, the graphic runs right away.
+- Afterwards the Wattrio page guides through the settings: check each section, **Speichern** (save), ✓, the next one opens.
+- Settings in collapsed sections with *yes / no* and their own sensor detection that only suggests matching sensors. Order: grid, batteries, solar, dynamic tariff, EV / wallbox, loads.
+- Backup power right at each battery. The electricity price moved to "Dynamischer Stromtarif".
+- Glass is the default; Klassik is chosen under settings → Allgemein.
+
 ## 0.4.2
 
 **Deutsch**

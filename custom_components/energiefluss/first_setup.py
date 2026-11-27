@@ -47,10 +47,9 @@ def notify(hass: HomeAssistant, entry: ConfigEntry, configured: bool) -> None:
     if german:
         lines = [
             f"**{entry.title}** ist eingerichtet.",
-            f"👉 **[Wattrio öffnen]({page})** – ganz oben in der Seitenleiste. Dort läuft der Energiefluss.",
-            "⚙️ Oben rechts auf **Einstellungen**: Sensoren prüfen und deine Verbraucher in **Grundlast** "
-            "(läuft sowieso: Kühlschrank, Router …) und **Zusatzverbraucher** (zeitlich verschiebbar: "
-            "Waschmaschine, Wallbox …) einsortieren.",
+            f"👉 **[Wattrio öffnen]({page})** – ganz oben in der Seitenleiste.",
+            "⚙️ Dort gehst du die Einstellungen Abschnitt für Abschnitt durch: prüfen, **Speichern**, "
+            "der nächste klappt auf. Die Grafik daneben zeigt sofort, was sich ändert.",
             "🧩 Die Karte auf einem eigenen Dashboard: Dashboard bearbeiten → **Karte hinzufügen** → nach "
             "**Wattrio** suchen. (Falls sie nicht auftaucht: die Seite einmal neu laden.)",
         ]
@@ -60,10 +59,9 @@ def notify(hass: HomeAssistant, entry: ConfigEntry, configured: bool) -> None:
     else:
         lines = [
             f"**{entry.title}** is set up.",
-            f"👉 **[Open Wattrio]({page})** – at the top of the sidebar. The energy flow runs there.",
-            "⚙️ Top right, **Einstellungen** (settings): check the sensors and sort your loads into **Grundlast** "
-            "(base load: fridge, router …) and **Zusatzverbraucher** (additional, can be shifted: washing "
-            "machine, wallbox …).",
+            f"👉 **[Open Wattrio]({page})** – at the top of the sidebar.",
+            "⚙️ Go through the settings there section by section: check, **Speichern** (save), the next one "
+            "opens. The graphic next to it shows every change right away.",
             "🧩 The card on your own dashboard: edit the dashboard → **Add card** → search for **Wattrio**. "
             "(If it does not show up: reload the page once.)",
         ]

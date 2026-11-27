@@ -180,7 +180,8 @@ def icon() -> None:
     # docs/brand for the README, custom_components/<domain>/brand for HACS / Home Assistant
     for out in (ROOT / "docs" / "brand", ROOT / "custom_components" / "energiefluss" / "brand"):
         out.mkdir(parents=True, exist_ok=True)
-        for name, px in (("icon.png", 256), ("icon@2x.png", 512)):
+        # the icon doubles as the logo (square, like the SmartFlow Preisampel's)
+        for name, px in (("icon.png", 256), ("icon@2x.png", 512), ("logo.png", 256), ("logo@2x.png", 512)):
             face.resize((px, px), Image.LANCZOS).save(out / name, optimize=True)
     face.resize((256, 256), Image.LANCZOS).save(ROOT / "docs" / "logo.png", optimize=True)
     print(f"icon-source.jpg: box {box}, out docs/logo.png, docs/brand/icon.png, icon@2x.png")

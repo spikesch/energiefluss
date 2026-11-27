@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## Unreleased
+
+**Deutsch**
+
+- Die Integration bringt jetzt auch ein Logo mit (`logo.png`, `logo@2x.png`), wie die SmartFlow Preisampel.
+
+**English**
+
+- The integration now also ships a logo (`logo.png`, `logo@2x.png`).
+
 ## 0.3.2
 
 **Deutsch**

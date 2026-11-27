@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Batteries can be marked *only via backup* (e.g. EcoFlow): their input counts on the house side, their output only feeds their backup loads; the house line and source colours follow.
+- Glass card: three ball sizes counting full values (1000 W / 100 W / 10 W, nothing below 10 W).
+- Glass card: PV strings on a glass solar panel, wider PV collector, smaller grid tile, small gap between load groups, no "heute" label.
+- Click a value to open its sensor's dialog.
+- Logo and Home Assistant brand icons.
+
 ## 0.1.0 – first public version
 
 **Integration**

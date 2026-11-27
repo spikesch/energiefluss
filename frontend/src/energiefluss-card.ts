@@ -92,6 +92,9 @@ interface Layout {
     power: string | null;
     soc: string | null;
     backup?: Load[];
+    backup_only?: boolean; // gives power only to its backup loads, never to the house
+    charge?: string | null; // input sensor (split mode)
+    discharge?: string | null; // output sensor (split mode)
   }[];
   grid: {
     price: string | null;
@@ -265,7 +268,11 @@ export class EnergieflussCard extends LitElement {
       [80, 58],
     ];
   }
-  /** Top of the "PV gesamt" box (70 x 26 at x 45). */
+  /** Left edge and width of the "PV gesamt" box. */
+  protected get _pvBox(): [number, number] {
+    return [45, 70];
+  }
+  /** Top of the "PV gesamt" box (26 high). */
   protected get _pvBoxY(): number {
     return 108;
   }
@@ -288,6 +295,19 @@ export class EnergieflussCard extends LitElement {
   protected get _rowH(): number {
     return LOAD_ROW;
   }
+
+  /** Makes `content` open the more-info dialog of `entity` when clicked. */
+  protected _tap(entity: string | null | undefined, content: SVGTemplateResult): SVGTemplateResult {
+    return entity ? svg`<g class="tap" data-entity=${entity}>${content}</g>` : content;
+  }
+
+  /** Click on a value: open its sensor's more-info dialog (like other HA cards). */
+  protected _onTap = (ev: Event): void => {
+    const hit = ev.composedPath().find((e): e is Element => e instanceof Element && e.hasAttribute("data-entity"));
+    const entityId = hit?.getAttribute("data-entity");
+    if (!entityId) return;
+    this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
+  };
 
   /** Font size for text set in the templates; looks may scale all of it. */
   protected _fs(size: number): number {
@@ -363,7 +383,7 @@ export class EnergieflussCard extends LitElement {
   }
   /** Balls (radius, colour) a load's dots consist of, for looks that count the
    *  power in balls; null = one wagon per load whose size shows the power. */
-  protected _wagonBalls(_watts: number, _colour: string): { r: number; colour: string }[] | null {
+  protected _wagonBalls(_watts: number, _colour: string, _source?: string): { r: number; colour: string }[] | null {
     return null;
   }
   /** Dots of the house line (from the inverter to the house). */
@@ -379,6 +399,26 @@ export class EnergieflussCard extends LitElement {
   protected _batteryRoute(_cx: number, _top: number): string | null {
     return null;
   }
+  /**
+   * Power on the line between a battery and the storage box (+ = into the
+   * battery). Usually its own power; a battery that can only give power to
+   * its backup loads (e.g. EcoFlow) only ever takes power in: its input,
+   * including what it just passes through to its backup loads.
+   */
+  protected _lineFlow(name: string, p: number | null): number | null {
+    const bat = this._layout?.batteries.find((b) => b.name === name);
+    if (bat?.backup_only) return Math.max(this._w(bat.charge) ?? 0, 0);
+    return p;
+  }
+
+  /** Power the backup-only batteries give out (to loads that are not on the house net):
+   *  their measured output, so loads that are only sometimes on them do not count. */
+  protected get _offGridLoads(): number {
+    return (this._layout?.batteries ?? [])
+      .filter((b) => b.backup_only)
+      .reduce((s, b) => s + Math.max(this._w(b.discharge) ?? 0, 0), 0);
+  }
+
   /** Horizontal offset of the whole storage area (n = number of batteries). */
   protected _batteryShift(_n: number): number {
     return 0;
@@ -481,12 +521,15 @@ export class EnergieflussCard extends LitElement {
     const strings = L.solar.strings.slice(0, 4);
     const pos = this._stringPos;
     const by = this._pvBoxY;
+    const [bx, bw] = this._pvBox;
+    const lx = bx + bw + 6; // labels right of the box
     const today = kwh(this._s(L.solar.today));
     const rest = kwh(this._s(L.solar.forecast_remaining));
     const routes = strings.map((_s, i) => this._stringRoute(pos[i][0], pos[i][1]));
     const through = strings.length > 0 && routes.every((r) => r !== null);
     const line = `M ${this._solarX} ${by + 26} V ${this._solarY} H ${this._invX}`;
     return svg`
+      ${this._solarBack()}
       ${through
         ? // the line first, the strings' dots on it, tiles and box on top (dots pass below the glass)
           svg`${this._flow(line, c, total, true, false)}
@@ -494,15 +537,20 @@ export class EnergieflussCard extends LitElement {
         : nothing}
       ${strings.map((s, i) => {
         const [x, y] = pos[i];
-        return this._stringTile(x, y, s.entity, c);
+        return this._tap(s.entity, this._stringTile(x, y, s.entity, c));
       })}
       ${this._solarIcon(c)}
-      ${this._box(45, by, 70, 26, c, fmtPower(total, this._loc), 13)}
-      <text x="121" y=${by + 9} class="lbl">PV gesamt</text>
-      ${today !== null ? svg`<text x="121" y=${by + 22} class="small" fill=${c}>${fmtEnergy(today, this._loc)} heute</text>` : nothing}
-      ${rest !== null ? svg`<text x="121" y=${by + 34} class="small">Rest ${fmtEnergy(rest, this._loc)}</text>` : nothing}
+      ${this._tap(L.entities.solar_power, this._box(bx, by, bw, 26, c, fmtPower(total, this._loc), 13))}
+      <text x=${lx} y=${by + 9} class="lbl">PV gesamt</text>
+      ${today !== null ? svg`<text x=${lx} y=${by + 22} class="small" fill=${c}>${fmtEnergy(today, this._loc)} heute</text>` : nothing}
+      ${rest !== null ? svg`<text x=${lx} y=${by + 34} class="small">Rest ${fmtEnergy(rest, this._loc)}</text>` : nothing}
       ${through ? nothing : this._flow(line, c, total, true)}
     `;
+  }
+
+  /** Drawn first in the PV section, below the string tiles (nothing in the classic look). */
+  protected _solarBack(): SVGTemplateResult {
+    return svg``;
   }
 
   /** Symbol next to the PV strings. */
@@ -536,7 +584,12 @@ export class EnergieflussCard extends LitElement {
     const energy = this._own("battery_energy");
     const shown = this._displayBatteries();
     const n = shown.length;
-    const total = this._own("battery_power");
+    // what flows on the storage lines (see _lineFlow)
+    const nets = shown.map((b) => this._lineFlow(b.name, num(this._s(b.power))));
+    const anyBackupOnly = shown.some((b) => b.backup_only);
+    const total = anyBackupOnly
+      ? nets.reduce<number | null>((s, w) => (w === null ? s : (s ?? 0) + w), null)
+      : this._own("battery_power");
     // flush with the outer edges of the battery boxes below
     const storeX = Math.min(...shown.map((b) => b.cx - b.w / 2));
     const storeW = Math.max(...shown.map((b) => b.cx + b.w / 2)) - storeX;
@@ -560,9 +613,10 @@ export class EnergieflussCard extends LitElement {
         // the storage box spans all batteries: every line drops straight down
         const path = `M ${cx} ${sy + STORE_H} V ${top}`;
         const label = p === null ? "" : p > MIN_FLOW_W ? "lädt" : p < -MIN_FLOW_W ? "entlädt" : "ruht";
+        const net = nets[i];
         return svg`
-          ${this._flow(path, c, p, (p ?? 0) > 0, !through)}
-          ${this._batteryWidget(b.name, cx, top, w, p, s, label, c, b.capacity_kwh)}
+          ${this._flow(path, c, net, (net ?? 0) > 0, !through)}
+          ${this._tap(b.power, this._batteryWidget(b.name, cx, top, w, p, s, label, c, b.capacity_kwh))}
         `;
       })}
       ${this._flow(feed, c, total, (total ?? 0) > 0, !through)}
@@ -570,13 +624,10 @@ export class EnergieflussCard extends LitElement {
         ? this._trainDots(
             "battery",
             c,
-            shown.map((b, i) => {
-              const p = num(this._s(b.power));
-              return { route: routes[i]!, w: p, forward: (p ?? 0) > 0 };
-            }),
+            shown.map((_b, i) => ({ route: routes[i]!, w: nets[i], forward: (nets[i] ?? 0) > 0 })),
           )
         : nothing}
-      ${this._box(
+      ${this._tap(L.entities.battery_soc, this._box(
         storeX,
         sy,
         storeW,
@@ -586,7 +637,7 @@ export class EnergieflussCard extends LitElement {
           energy !== null && storeW >= 80 ? ` · ${fmtEnergy(energy, this._loc)}` : ""
         }`,
         storeW >= 150 ? 11 : 10,
-      )}
+      ))}
     `;
   }
 
@@ -761,6 +812,11 @@ export class EnergieflussCard extends LitElement {
     return groups;
   }
 
+  /** Show "heute" / "24 h" above the energy column of the load lists. */
+  protected get _periodLabel(): boolean {
+    return true;
+  }
+
   /** Draw a load group's feed as part of its list's pipes (same look, clean joins). */
   protected get _pipeTrunk(): boolean {
     return false;
@@ -910,7 +966,7 @@ export class EnergieflussCard extends LitElement {
     // power can be read off the train.
     const speed = this._wagonSpeed;
     const parts = running.flatMap(({ l, i, w }) =>
-      (this._wagonBalls(w!, colour) ?? [undefined]).map((ball) => ({ l, i, radius: ball?.r, tint: ball?.colour })),
+      (this._wagonBalls(w!, colour, l.source) ?? [undefined]).map((ball) => ({ l, i, radius: ball?.r, tint: ball?.colour })),
     );
     if (parts.some((p) => p.radius !== undefined)) parts.sort((a, b) => (b.radius ?? 0) - (a.radius ?? 0));
     let pos = 0;
@@ -945,22 +1001,22 @@ export class EnergieflussCard extends LitElement {
           return svg`
             ${this._branch(`M ${LOAD_X0 + 4} ${top} V ${y + mid} H ${LOAD_X0 + 10}`, colour, "child")}
             ${this._bySize ? wagonDots(childPath(l, i), l.w, i) : nothing}
-            <g opacity=${idle ? 0.45 : 0.85}>
+            <g opacity=${idle ? 0.45 : 0.85} class="tap" data-entity=${l.entity}>
               ${this._nameBox(l.name, y, colour, tip, 12)}
               ${this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")}
             </g>
-            ${this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy")}`;
+            ${this._tap(l.today, this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy"))}`;
         }
         const tip = l.tip ?? (l.source ? `${l.name} · gespeist von ${l.source}` : l.name);
         return svg`
           ${this._bySize
             ? wagonDots(path(l, i), own(i), i)
             : this._dot(path(l, i), colour, l.w, true, 2.4)}
-          <g opacity=${idle ? 0.45 : 1}>
+          <g opacity=${idle ? 0.45 : 1} class="tap" data-entity=${l.entity}>
             ${this._nameBox(l.name, y, colour, tip)}
             ${this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")}
           </g>
-          ${this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy")}`;
+          ${this._tap(l.today, this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy"))}`;
       })}
     `;
   }
@@ -1038,6 +1094,9 @@ export class EnergieflussCard extends LitElement {
     const rest = this._own("unmeasured_power");
     const groups = this._groups();
     const houseLine = `M ${this._invTop[0]} ${this._invTop[1]} V ${Math.min(152, this._invTop[1] - 8)} H 250 V 96`;
+    // the house value counts every consumer; the line from the inverter carries
+    // only what the house net supplies (not the loads a backup-only battery feeds)
+    const houseNet = home === null ? null : Math.max(home - this._offGridLoads, 0);
 
     return svg`
       ${this._houseIcon(c)}
@@ -1045,10 +1104,10 @@ export class EnergieflussCard extends LitElement {
         ? svg`<text x="256" y="112" class="tiny">nicht erfasst</text>
               <text x="256" y="122" class="tiny val">${fmtPower(rest, this._loc)}</text>`
         : nothing}
-      ${this._flow(houseLine, c, home, true, false)}
-      ${this._houseDots(this._houseIn() ?? houseLine, c, home)}
-      ${this._houseJunction(home)}
-      ${groups.length
+      ${this._flow(houseLine, c, houseNet, true, false)}
+      ${this._houseDots(this._houseIn() ?? houseLine, c, houseNet)}
+      ${this._houseJunction(houseNet)}
+      ${groups.length && this._periodLabel
         ? svg`<text x=${LOAD_X1 - LOAD_EW / 2} y="9" text-anchor="middle" class="tiny">${L.energy_period === "rolling24" ? "24 h" : "heute"}</text>`
         : nothing}
       ${groups.map(
@@ -1061,7 +1120,7 @@ export class EnergieflussCard extends LitElement {
           ${g.more ? this._moreRow(g) : nothing}
         `,
       )}
-      ${this._box(215, 70, 70, 26, c, fmtPower(home, this._loc), 13)}
+      ${this._tap(L.entities.home_power, this._box(215, 70, 70, 26, c, fmtPower(home, this._loc), 13))}
       <text x="211" y="83" text-anchor="end" class="lbl">Haus</text>
       <text x="211" y="95" text-anchor="end" class="tiny val">${fmtEnergy(num(this._s(L.home_today)), this._loc)}</text>
     `;
@@ -1094,8 +1153,8 @@ export class EnergieflussCard extends LitElement {
     const { grid, exporting, cents, label, power, imp, exp } = this._gridData();
     return svg`
       ${this._flow(`M ${this._invX} ${this._invY + 42} H 84`, c, grid, exporting)}
-      ${this._panel(10, 192, 74, 40, c)}
-      <text x="47" y=${cents === null ? 217 : 209} text-anchor="middle" class="val" font-size=${this._fs(13)}>${power}</text>
+      ${this._tap(this._layout!.entities.grid_power, svg`${this._panel(10, 192, 74, 40, c)}
+        <text x="47" y=${cents === null ? 217 : 209} text-anchor="middle" class="val" font-size=${this._fs(13)}>${power}</text>`)}
       ${cents !== null
         ? svg`<text x="47" y="225" text-anchor="middle" class="tiny" fill=${c}>${fmtCents(cents, this._loc)}</text>`
         : nothing}
@@ -1121,7 +1180,8 @@ export class EnergieflussCard extends LitElement {
     const title = this._config?.title;
     return html`
       <ha-card .header=${title ?? nothing}>
-        <svg viewBox=${`0 0 ${VIEW_W} ${this._viewH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Energiefluss">
+        <svg viewBox=${`0 0 ${VIEW_W} ${this._viewH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Energiefluss"
+          @click=${this._onTap}>
           ${this._defs()} ${this._solar()} ${this._batteries()} ${this._inverter()} ${this._home()} ${this._grid()}
         </svg>
       </ha-card>
@@ -1156,7 +1216,8 @@ export class EnergieflussCard extends LitElement {
     .grp {
       font-weight: 600;
     }
-    .more {
+    .more,
+    .tap {
       cursor: pointer;
     }
     .more:hover text {

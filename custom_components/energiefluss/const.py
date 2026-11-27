@@ -22,6 +22,9 @@ CONF_BATTERY_INVERT = "invert"  # True: sensor reports charging as negative
 CONF_BATTERY_MODE = "mode"
 CONF_BATTERY_CHARGE = "charge_power"
 CONF_BATTERY_DISCHARGE = "discharge_power"
+# True: the battery cannot feed the house; it only takes power in (charge input,
+# incl. pass-through) and gives it out to its own backup loads (e.g. EcoFlow).
+CONF_BATTERY_BACKUP_ONLY = "backup_only"
 MODE_COMBINED = "combined"
 MODE_SPLIT = "split"
 

@@ -144,24 +144,20 @@ describe("load icons", () => {
 describe("trainBalls", () => {
   const count = (w: number) => {
     const b = trainBalls(w);
-    return [b.filter((x) => x === "big").length, b.filter((x) => x === "small").length];
+    return (["big", "medium", "small"] as const).map((k) => b.filter((x) => x === k).length);
   };
-  it("uses one small ball per started 100 W up to 1000 W", () => {
-    expect(count(5)).toEqual([0, 1]);
-    expect(count(100)).toEqual([0, 1]);
-    expect(count(101)).toEqual([0, 2]);
-    expect(count(1000)).toEqual([0, 10]);
+  it("counts only full values: 1000 W big, 100 W medium, 10 W small", () => {
+    expect(count(9)).toEqual([0, 0, 0]);
+    expect(count(10)).toEqual([0, 0, 1]);
+    expect(count(99)).toEqual([0, 0, 9]);
+    expect(count(100)).toEqual([0, 1, 0]);
+    expect(count(1234)).toEqual([1, 2, 3]);
+    expect(count(6500)).toEqual([6, 5, 0]);
+    expect(count(-4070)).toEqual([4, 0, 7]);
   });
-  it("uses big balls per full 1000 W above that, small ones for the rest", () => {
-    expect(count(1001)).toEqual([1, 1]);
-    expect(count(1100)).toEqual([1, 1]);
-    expect(count(2000)).toEqual([2, 0]);
-    expect(count(6500)).toEqual([6, 5]);
-    expect(count(-4070)).toEqual([4, 1]);
-  });
-  it("puts big balls first and caps each kind", () => {
-    expect(trainBalls(2150)).toEqual(["big", "big", "small", "small"]);
-    expect(count(25000)).toEqual([10, 0]);
+  it("puts bigger balls first and caps the big ones", () => {
+    expect(trainBalls(2150)).toEqual(["big", "big", "medium", "small", "small", "small", "small", "small"]);
+    expect(count(25000)).toEqual([10, 0, 0]);
   });
 });
 

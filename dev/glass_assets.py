@@ -1,22 +1,24 @@
 """Turn the generated glass pictures into card assets.
 
-For each picture in dev/assets (car-source.jpg, inverter-source.jpg) the flat
+For each picture in dev/assets (car, inverter and solar source) the flat
 background is removed with "colour to alpha" (every pixel is treated as a mix
 of the background colour and the object, so soft glass edges and shadows keep
 their transparency), the object is cropped and scaled, and the points from the
 matching JSON file (outline, connectors, text positions, all in source pixels)
 are written to a TypeScript module in the picture's own output pixels.
 
-Output: frontend/public/<name>-glass.png and frontend/src/<name>-asset.ts
+Output: frontend/public/<name>-glass.png and frontend/src/<name>-asset.ts (car, inverter, solar),
+        docs/logo.png and docs/brand/icon(@2x).png from icon-source.jpg
 
 Run: python dev/glass_assets.py
 """
 
 import json
+import math
 from pathlib import Path
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "dev" / "assets"
@@ -122,6 +124,74 @@ def inverter() -> None:
     )
 
 
+def solar() -> None:
+    width = 360  # shown at about 130 px
+    pt, height, _scale = cut_out(ASSETS / "solar-source.jpg", PUBLIC / "solar-glass.png", width)
+    spec = json.loads((ASSETS / "solar.json").read_text())
+    (x0, y0), (x1, y1), (x2, y2), (x3, y3) = spec["face"]
+
+    def at(u: float, v: float) -> list[float]:
+        top = (x0 + (x1 - x0) * u, y0 + (y1 - y0) * u)
+        bottom = (x3 + (x2 - x3) * u, y3 + (y2 - y3) * u)
+        return pt([top[0] + (bottom[0] - top[0]) * v, top[1] + (bottom[1] - top[1]) * v])
+
+    # string order of the card: top row left, right, bottom row left, right
+    spots = [at(0.25, 0.27), at(0.75, 0.27), at(0.25, 0.73), at(0.75, 0.73)]
+    # directions of the face's top edge and left edge (unit vectors): labels are
+    # drawn in this frame so they lie flat on the panel
+    def unit(dx: float, dy: float) -> list[float]:
+        n = math.hypot(dx, dy)
+        return [round(dx / n, 4), round(dy / n, 4)]
+
+    across = unit(x1 - x0, y1 - y0)
+    down = unit(x3 - x0, y3 - y0)
+    write_ts(
+        SRC_TS / "solar-asset.ts",
+        [
+            "The glass solar panel picture (frontend/public/solar-glass.png) and, in its own",
+            "pixels, the middles of the four quarters of its front face (the string labels)",
+            "and the directions of the face's top and left edge; face = its corners (top left,",
+            "top right, bottom right, bottom left).",
+        ],
+        "SOLAR_IMAGE",
+        [
+            'file: "solar-glass.png"',
+            f"width: {width}",
+            f"height: {height}",
+            f"face: {[pt(c) for c in spec['face']]} as [number, number][]",
+            f"spots: {spots} as [number, number][]",
+            f"across: {across} as [number, number]",
+            f"down: {down} as [number, number]",
+        ],
+    )
+
+
+def icon() -> None:
+    """The app icon: the rounded glass square cut out of icon-source.jpg (corners
+    transparent), as README logo and in the sizes of the home-assistant/brands repo."""
+    src = Image.open(ASSETS / "icon-source.jpg").convert("RGB")
+    box = ICON_BOX
+    face = src.crop(box)
+    size = face.width
+    # anti-aliased rounded-square mask, drawn 4x and scaled down
+    big = Image.new("L", (size * 4, size * 4), 0)
+    ImageDraw.Draw(big).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), radius=ICON_RADIUS * 4, fill=255)
+    face.putalpha(big.resize((size, size), Image.LANCZOS))
+    out = ROOT / "docs" / "brand"
+    out.mkdir(parents=True, exist_ok=True)
+    for name, px in (("icon.png", 256), ("icon@2x.png", 512)):
+        face.resize((px, px), Image.LANCZOS).save(out / name, optimize=True)
+    face.resize((256, 256), Image.LANCZOS).save(ROOT / "docs" / "logo.png", optimize=True)
+    print(f"icon-source.jpg: box {box}, out docs/logo.png, docs/brand/icon.png, icon@2x.png")
+
+
+# the glass square in icon-source.jpg (including its 2.5D edge) and its corner radius
+ICON_BOX = (118, 118, 906, 906)
+ICON_RADIUS = 110
+
+
 if __name__ == "__main__":
     car()
     inverter()
+    solar()
+    icon()

@@ -1,0 +1,4 @@
+{
+  "_comment": "Points in pixels of solar-source.jpg: the panel's cell area (inner edge of the glass frame) as top-left, top-right, bottom-right, bottom-left corner. The four string labels fill its quarters.",
+  "face": [[298,215],[1060,138],[1107,513],[340,608]]
+}

@@ -27,10 +27,12 @@ import {
   shortName,
   sourceShares,
   trainBalls,
+  type BallKind,
 } from "./format";
 import { ICONS, iconFor, type IconName } from "./icons";
 import { CAR_IMAGE } from "./car-asset";
 import { INVERTER_IMAGE } from "./inverter-asset";
+import { SOLAR_IMAGE } from "./solar-asset";
 
 // blue, green and orange; red-orange only for backup
 const GLASS = {
@@ -72,7 +74,8 @@ const LIQUID_SHAPES = [
   [0.8, 2.2, -2.4, 0.4],
 ];
 // Every line carries a calm train of balls at constant speed. Its balls count
-// the power (see trainBalls): a big ball per 1000 W, a small one per 100 W.
+// the power (see trainBalls): a big ball per 1000 W, a medium one per 100 W,
+// a small one per 10 W.
 const TRAIN_SPEED = 26; // px per second
 const TRAIN_GAP = 2.5; // px of air between two balls
 const TRAIN_PAUSE = 0.7; // s between two trains
@@ -80,14 +83,62 @@ const BAT_H = 72; // glass battery: cap at top, cylinder down to top + BAT_H
 const BAT_STAGGER = 0.6; // share of the classic up/down offset between batteries
 const FONT_SCALE = 0.7; // all text smaller than in the classic look
 const BALL_BIG = 5.2;
-const BALL_SMALL = 2.7;
+const BALL_MEDIUM = 2.7;
+const BALL_SMALL = 1.6;
+const BALL_R: Record<BallKind, number> = { big: BALL_BIG, medium: BALL_MEDIUM, small: BALL_SMALL };
 
 // where trains end and new ones start: a mercury blob on the edge of each
 // glass box, where its line to the inverter attaches (clear of the numbers)
 // PV: flat string tiles in two rows, the PV total box right below them
-const PV_TILE_H = 32;
-const PV_ROWS = [8, 8 + PV_TILE_H + 4];
-const PV_BOX_Y = PV_ROWS[1] + PV_TILE_H + 6;
+// PV: a glass solar panel picture; the four string values sit on its quarters
+const SOLAR_X = 6;
+const SOLAR_Y = 0;
+const SOLAR_W = 130;
+const SOLAR_K = SOLAR_W / SOLAR_IMAGE.width; // card units per picture pixel
+const SOLAR_URL = import.meta.url.replace(/[^/]*$/, "") + SOLAR_IMAGE.file;
+const PANEL_FRAME = 0; // FACE is already the inner edge of the panel's glass frame
+const LABEL_GAP = 3.5; // air around each label: to the frame and between labels
+const LABEL_W = 44; // nominal label box, only used to pass its middle around
+const LABEL_H = 18;
+type Pt2 = [number, number];
+// the panel's face in card units: top left, top right, bottom right, bottom left
+const FACE = SOLAR_IMAGE.face.map(([x, y]) => [SOLAR_X + x * SOLAR_K, SOLAR_Y + y * SOLAR_K] as Pt2);
+/** Point on the face at (u, v) in 0..1 (bilinear, follows the slight perspective). */
+const onFace = (u: number, v: number): Pt2 => {
+  const [tl, tr, br, bl] = FACE;
+  const top = [tl[0] + (tr[0] - tl[0]) * u, tl[1] + (tr[1] - tl[1]) * u];
+  const bottom = [bl[0] + (br[0] - bl[0]) * u, bl[1] + (br[1] - bl[1]) * u];
+  return [top[0] + (bottom[0] - top[0]) * v, top[1] + (bottom[1] - top[1]) * v];
+};
+/** The four string labels as quadrilaterals filling the face's quarters with an even
+ *  gap to the frame and to each other; order: top left, top right, bottom left, bottom right. */
+const LABELS = (() => {
+  const [tl, tr, , bl] = FACE;
+  const w = Math.hypot(tr[0] - tl[0], tr[1] - tl[1]);
+  const h = Math.hypot(bl[0] - tl[0], bl[1] - tl[1]);
+  const eu = (PANEL_FRAME + LABEL_GAP) / w; // edge margin
+  const ev = (PANEL_FRAME + LABEL_GAP) / h;
+  const gu = LABEL_GAP / w; // half of it on each side of the middle
+  const gv = LABEL_GAP / h;
+  const us = [
+    [eu, 0.5 - gu / 2],
+    [0.5 + gu / 2, 1 - eu],
+  ];
+  const vs = [
+    [ev, 0.5 - gv / 2],
+    [0.5 + gv / 2, 1 - ev],
+  ];
+  return [0, 1, 2, 3].map((i) => {
+    const [u0, u1] = us[i % 2];
+    const [v0, v1] = vs[Math.floor(i / 2)];
+    return {
+      corners: [onFace(u0, v0), onFace(u1, v0), onFace(u1, v1), onFace(u0, v1)],
+      middle: onFace((u0 + u1) / 2, (v0 + v1) / 2),
+      size: [(u1 - u0) * w, (v1 - v0) * h] as Pt2,
+    };
+  });
+})();
+const PV_BOX_Y = 82;
 const PV_MID: [number, number] = [104, PV_BOX_Y + 26]; // "PV gesamt", bottom edge
 const HOUSE_MID: [number, number] = [250, 96]; // house value box, bottom edge
 // the storage box sits higher than in the classic look (smaller inverter)
@@ -152,7 +203,8 @@ const PYLON_Y = 122;
 const PYLON_S = 0.7;
 // left column below the pylon: grid tile, then wallbox
 const TILE_X = 8;
-const TILE_W = 64;
+const TILE_W = 54;
+const PANEL_GAP = 1.25; // air between two load group panels
 const GRID_TILE_Y = 196;
 // Glass inverter picture: its top connector sits right below the house box,
 // all lines start or end at the tips of its connectors.
@@ -243,17 +295,19 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   }
 
   // denser lists: rows of 15 instead of 22
+  // the string labels sit on the middles of the panel's quarters
   protected get _stringPos(): number[][] {
-    return [
-      [10, PV_ROWS[0]],
-      [80, PV_ROWS[0]],
-      [10, PV_ROWS[1]],
-      [80, PV_ROWS[1]],
-    ];
+    return LABELS.map(({ middle: [x, y] }) => [x - LABEL_W / 2, y - LABEL_H / 2]);
   }
+
 
   protected get _pvBoxY(): number {
     return PV_BOX_Y;
+  }
+
+  // wide enough to catch the trains of both tile columns (tile middles at 40 and 110)
+  protected get _pvBox(): [number, number] {
+    return [22, 96];
   }
 
   protected get _storeY(): number {
@@ -271,6 +325,11 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   // each group's feed is one pipe with its list's bracket and branches
   protected get _pipeTrunk(): boolean {
     return true;
+  }
+
+  // no "heute" / "24 h" above the load lists
+  protected get _periodLabel(): boolean {
+    return false;
   }
 
   // glass pipes run right up to each load's symbol
@@ -296,8 +355,10 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return true;
   }
 
+  // a group's glass panel reaches 19 above its first row and 3 below its last;
+  // the gap keeps PANEL_GAP of air between two panels
   protected get _groupGap(): number {
-    return 16;
+    return 16 + PANEL_GAP;
   }
 
   /** Gradients for glass, shadows, liquid and the halos of the balls. */
@@ -360,7 +421,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
 
   /** The train on path `d`: radius and start time of each ball, travel time and period. */
   protected _trainOf(d: string, power: number) {
-    const radii = trainBalls(power).map((k) => (k === "big" ? BALL_BIG : BALL_SMALL));
+    const radii = trainBalls(power).map((k) => BALL_R[k]);
     // balls follow each other with a little air between them
     const begins: number[] = [];
     let pos = 0;
@@ -369,7 +430,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       begins.push(pos / TRAIN_SPEED);
     });
     const travel = pathLength(d) / TRAIN_SPEED;
-    const period = travel + begins[begins.length - 1] + TRAIN_PAUSE;
+    const period = travel + (begins[begins.length - 1] ?? 0) + TRAIN_PAUSE;
     return { radii, begins, travel, period };
   }
 
@@ -433,7 +494,8 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       const hits = items.flatMap((it) => this._arrivals(it.route, it.w));
       return svg`${own}${this._dot(out, colour, total, true)}${this._blob(PV_MID, colour, total, hits)}`;
     }
-    const total = this._own("battery_power");
+    // sum of what the batteries exchange with the house (see _lineFlow)
+    const total = items.reduce<number | null>((s, it) => (it.w === null ? s : (s ?? 0) + it.w), null);
     const [bx, by] = this._invBottom;
     const feed = `M ${bx.toFixed(1)} ${by.toFixed(1)} V ${STORE_MID}`;
     const charging = (total ?? 0) > 0;
@@ -533,13 +595,37 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return svg``;
   }
 
-  protected _stringTile(x: number, y: number, entity: string, c: string): SVGTemplateResult {
-    return svg`
-      ${this._panel(x, y, 60, PV_TILE_H, c)}
-      ${this._line("solarPanel", x + 25, y + 3, 10, c)}
-      <text x=${x + 30} y=${y + 21} text-anchor="middle" class="val" font-size=${this._fs(11)}>${fmtPower(this._w(entity), this._loc)}</text>
-      <text x=${x + 30} y=${y + 29} text-anchor="middle" class="tiny">${shortName(this._name(entity), 13)}</text>`;
+  /** The glass solar panel picture below the string labels. */
+  protected _solarBack(): SVGTemplateResult {
+    return svg`<image href=${SOLAR_URL} x=${SOLAR_X} y=${SOLAR_Y} width=${SOLAR_W}
+      height=${(SOLAR_IMAGE.height * SOLAR_K).toFixed(1)} />`;
   }
+
+  /** One PV string: a glass label filling its quarter of the panel, lying in the
+   *  panel's plane, with the same gap to the frame and to its neighbours. */
+  protected _stringTile(x: number, y: number, entity: string, c: string): SVGTemplateResult {
+    const mx = x + LABEL_W / 2;
+    const my = y + LABEL_H / 2;
+    const label = LABELS.reduce((a, b) =>
+      Math.hypot(b.middle[0] - mx, b.middle[1] - my) < Math.hypot(a.middle[0] - mx, a.middle[1] - my) ? b : a,
+    );
+    const pts = label.corners.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
+    const [ax, ay] = SOLAR_IMAGE.across;
+    const [dx, dy] = SOLAR_IMAGE.down;
+    const [, lh] = label.size;
+    return svg`
+      <polygon points=${pts} fill="#020a14" fill-opacity="0.35" transform="translate(0.8 1.6)" />
+      <polygon points=${pts} fill=${c} fill-opacity="0.12" />
+      <polygon points=${pts} fill="url(#ef-slab)" stroke=${c} stroke-opacity="0.6" stroke-width="0.8"
+        stroke-linejoin="round" />
+      <g transform=${`matrix(${ax} ${ay} ${dx} ${dy} ${mx.toFixed(1)} ${my.toFixed(1)})`}>
+        <text x="0" y=${-lh / 2 + lh * 0.52} text-anchor="middle" class="val" font-size=${this._fs(12)} font-weight="600"
+          >${fmtPower(this._w(entity), this._loc)}</text>
+        <text x="0" y=${-lh / 2 + lh * 0.84} text-anchor="middle" class="tiny" style=${`font-size:${this._fs(7.5)}px`}
+          >${shortName(this._name(entity), 16)}</text>
+      </g>`;
+  }
+
 
   /** The glass inverter picture, placed by its connectors. */
   protected _inverter(): SVGTemplateResult {
@@ -571,13 +657,15 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     const id = `ef-bat-${Math.round(cx)}-${Math.round(top)}`;
     const body = `M ${x0} ${yt} V ${yb} A ${rx} ${ry} 0 0 0 ${x1} ${yb} V ${yt} A ${rx} ${ry} 0 0 0 ${x0} ${yt} Z`;
     const moving = p !== null && Math.abs(p) >= MIN_FLOW_W;
-    const charging = p !== null && p > MIN_FLOW_W;
+    // drops fall in / bubbles rise into the line by what flows on the battery's line
+    const flow = this._lineFlow(name, p);
+    const charging = flow !== null && flow > MIN_FLOW_W;
     const t = moving ? 3.4 : 5.5;
     // While it discharges, bubbles rise to the cap just as a ball of the
     // outgoing train starts there, so they drive on into the line (see
     // _riseIntoLine). Backup trains start inside the battery themselves
     // (see _batteryLead), so they rise like bubbles and leave through the shell.
-    const discharging = p !== null && p < -MIN_FLOW_W;
+    const discharging = flow !== null && flow < -MIN_FLOW_W;
     const small = w < 54;
     const stored = capacity && s !== null ? fmtEnergy((capacity * s) / 100, this._loc) : "";
     return svg`<g>
@@ -589,9 +677,9 @@ export class EnergieflussGlassCard extends EnergieflussCard {
             ${this._liquid(x0, x1, lvl, yb + ry + 2, c, t)}
           </g>`
         : nothing}
-      ${charging ? svg`<g clip-path=${`url(#${id})`}>${this._splash(cx, yt, lvl, rx, c, p!, top)}</g>` : nothing}
+      ${charging ? svg`<g clip-path=${`url(#${id})`}>${this._splash(cx, yt, lvl, rx, c, flow!, top)}</g>` : nothing}
       <path d=${body} fill="url(#ef-tube)" stroke=${RIM} stroke-opacity="0.55" stroke-width="0.9" />
-      ${discharging ? this._riseIntoLine(cx, yb, top, this._c.battery, p!) : nothing}
+      ${discharging ? this._riseIntoLine(cx, yb, top, this._c.battery, flow!) : nothing}
       <ellipse cx=${cx} cy=${yt} rx=${rx} ry=${ry} fill=${c} fill-opacity="0.12" stroke="#e6f6ff" stroke-opacity="0.7"
         stroke-width="0.8" />
       <rect x=${cx - 6} y=${top + 3} width="12" height=${yt - top - 3} fill=${c} fill-opacity="0.28" stroke=${RIM}
@@ -629,19 +717,39 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   }
 
   // load list trains count the power in balls as well, big ones in front
-  protected _wagonBalls(watts: number, colour: string): { r: number; colour: string }[] {
+  protected _wagonBalls(watts: number, colour: string, source?: string): { r: number; colour: string }[] {
     const kinds = trainBalls(watts);
-    // backup loads only get battery power (green); the others get the current mix
-    const tints = colour === this._c.backup ? kinds.map(() => this._c.battery) : this._tints(kinds);
-    return kinds.map((k, i) => ({ r: k === "big" ? BALL_BIG : BALL_SMALL, colour: tints[i] }));
+    const tints = colour === this._c.backup ? this._tints(kinds, this._backupShares(source)) : this._tints(kinds);
+    return kinds.map((k, i) => ({ r: BALL_R[k], colour: tints[i] }));
   }
 
-  /** Colours of where the house's power comes from right now: PV, battery, grid. */
-  protected _tints(kinds: ("big" | "small")[]): string[] {
-    // every discharging battery counts as a source, even while others charge
-    const discharge = (this._layout?.batteries ?? []).reduce((sum, b) => sum + Math.max(0, -(num(this._s(b.power)) ?? 0)), 0);
-    const grid = this._own("grid_power");
-    const shares = sourceShares(this._own("solar_power"), discharge, grid);
+  /**
+   * Where a battery's backup loads get their power: from the battery (green);
+   * a backup-only battery passes power from the house through as well, that
+   * part has the house's colours (input up to its output, the rest from the cells).
+   */
+  protected _backupShares(source?: string): number[] {
+    const bat = this._layout?.batteries.find((b) => b.name === source);
+    if (!bat?.backup_only) return [0, 1, 0];
+    const input = Math.max(this._w(bat.charge) ?? 0, 0);
+    const output = Math.max(this._w(bat.discharge) ?? 0, 0);
+    const through = output > 0 ? Math.min(input, output) / output : 0;
+    const house = this._houseShares();
+    return [house[0] * through, house[1] * through + (1 - through), house[2] * through];
+  }
+
+  /** Shares of PV, batteries and grid in what the house net gets right now. */
+  protected _houseShares(): number[] {
+    // every battery that feeds the house counts, even while others charge;
+    // backup-only batteries never feed the house
+    const discharge = (this._layout?.batteries ?? [])
+      .filter((b) => !b.backup_only)
+      .reduce((sum, b) => sum + Math.max(0, -(num(this._s(b.power)) ?? 0)), 0);
+    return sourceShares(this._own("solar_power"), discharge, this._own("grid_power"));
+  }
+
+  /** Colours for a train's balls by source shares (PV, battery, grid); default: the house's mix. */
+  protected _tints(kinds: BallKind[], shares = this._houseShares()): string[] {
     const palette = [this._c.solar, this._c.battery, this._c.grid];
     return colourBalls(kinds, shares).map((i) => palette[i]);
   }
@@ -676,7 +784,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   // the middle of the house box, the load trains from there; backup trains
   // start at the bottom of their battery and leave through its shell.
   protected _stringRoute(x: number, y: number): string | null {
-    return `M ${x + 30} ${y + PV_TILE_H / 2} V ${PV_BOX_Y + 13} H ${PV_MID[0]} V ${PV_MID[1]}`;
+    return `M ${x + LABEL_W / 2} ${y + LABEL_H / 2} V ${PV_BOX_Y + 13} H ${PV_MID[0]} V ${PV_MID[1]}`;
   }
 
   protected _houseIn(): string | null {
@@ -810,23 +918,23 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       { arrow: "↑", kwh: exp, name: "Einsp.", active: label === "Einspeisung" },
     ].filter((r) => r.kwh !== null);
     const y = GRID_TILE_Y;
-    // power, then the price in its own line, then today's import / export
-    const sep = y + (cents !== null ? 32 : 21);
-    const h = sep - y + (rows.length ? rows.length * 12 + 4 : 0);
+    // power, then the price in its own line, then today's import / export (compact)
+    const sep = y + (cents !== null ? 23 : 15);
+    const h = sep - y + (rows.length ? rows.length * 8.5 + 3 : 0);
     return svg`
       ${this._pylon(c)}
       ${this._flow(cable, c, grid, !exporting)}
-      ${this._panel(TILE_X, y, TILE_W, h, c)}
-      <text x=${TILE_X + TILE_W / 2} y=${y + 15.5} text-anchor="middle" class="val" font-size=${this._fs(11.5)} font-weight="600"
+      ${this._tap(this._layout!.entities.grid_power, this._panel(TILE_X, y, TILE_W, h, c))}
+      <text x=${TILE_X + TILE_W / 2} y=${y + 11} text-anchor="middle" class="val" font-size=${this._fs(11.5)} font-weight="600"
         >${power}</text>
       ${cents !== null
-        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 27} text-anchor="middle" class="dim" style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
+        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" class="dim" style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
         : nothing}
       ${rows.length
-        ? svg`<line x1=${TILE_X + 6} x2=${TILE_X + TILE_W - 6} y1=${sep} y2=${sep} class="sep" stroke=${c} />`
+        ? svg`<line x1=${TILE_X + 4} x2=${TILE_X + TILE_W - 4} y1=${sep} y2=${sep} class="sep" stroke=${c} />`
         : nothing}
       ${rows.map(
-        (r, i) => svg`<text x=${TILE_X + 6} y=${sep + 11 + i * 12} class=${r.active ? "val" : "dim"} style=${`font-size:${this._fs(8.5)}px`}
+        (r, i) => svg`<text x=${TILE_X + 4} y=${sep + 8 + i * 8.5} class=${r.active ? "val" : "dim"} style=${`font-size:${this._fs(8.5)}px`}
           ><tspan fill=${r.active ? c : nothing}>${r.arrow}</tspan> ${fmtEnergy(r.kwh, this._loc)}<tspan
           class=${r.active ? "" : "tiny"} style=${`font-size:${this._fs(7.5)}px`} fill=${r.active ? c : nothing}> ${r.name}</tspan></text>`,
       )}
@@ -903,7 +1011,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return svg`
       ${this._flow(feed, c, w, true, false)}
       ${this._mixedTrain(feed, w)}
-      <g>
+      <g class="tap" data-entity=${wb.power}>
         <title>${wb.name} · ${wb.flexible ? "Zusatzverbraucher" : "Grundlast"}</title>
         <image href=${CAR_URL} x=${CAR_X} y=${top} width=${CAR_W} height=${(CAR_IMAGE.height * k).toFixed(1)} />
         ${fill

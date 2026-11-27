@@ -15,6 +15,7 @@ from .const import (
     CONF_BATTERY_CHARGE,
     CONF_BATTERY_DISCHARGE,
     CONF_BATTERY_INVERT,
+    CONF_BATTERY_BACKUP_ONLY,
     CONF_BATTERY_MODE,
     CONF_BATTERY_NAME,
     CONF_BATTERY_POWER,
@@ -65,6 +66,7 @@ BATTERY_SCHEMA = vol.Schema(
         vol.Optional(CONF_BATTERY_DISCHARGE): _ENTITY,
         # loads on the battery's own (backup) output
         vol.Optional(CONF_BACKUP_LOADS): _ENTITIES,
+        vol.Optional(CONF_BATTERY_BACKUP_ONLY, default=False): cv.boolean,
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -120,6 +122,10 @@ def normalize_options(raw: dict[str, Any]) -> dict[str, Any]:
         if any(bat.get(k) for k in keys):
             bat.setdefault(CONF_BATTERY_INVERT, False)
             bat.setdefault(CONF_BATTERY_MODE, MODE_COMBINED)
+            if bat.get(CONF_BATTERY_BACKUP_ONLY) and bat[CONF_BATTERY_MODE] != MODE_SPLIT:
+                raise vol.Invalid(
+                    "„Entlädt nur über Notstrom“ braucht getrennte Sensoren für Laden (Eingang) und Entladen (Ausgang)."
+                )
             batteries.append(bat)
     with_backup = [b for b in batteries if b.get(CONF_BACKUP_LOADS)]
     if len(with_backup) > MAX_BACKUP_BATTERIES:

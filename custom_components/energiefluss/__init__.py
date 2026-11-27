@@ -26,7 +26,10 @@ from .const import (
     PANEL_FILENAME,
     PANEL_URL_PATH,
     CONF_BACKUP_LOADS,
+    CONF_BATTERY_BACKUP_ONLY,
     CONF_BATTERY_CAPACITY,
+    CONF_BATTERY_CHARGE,
+    CONF_BATTERY_DISCHARGE,
     CONF_BATTERY_NAME,
     CONF_FIXED_LOADS,
     CONF_FLEXIBLE_LOADS,
@@ -177,6 +180,11 @@ def _describe(hass: HomeAssistant, entry: EnergieflussConfigEntry) -> dict[str, 
                 "power": own(f"battery_{i}_power"),
                 "soc": own(f"battery_{i}_soc"),
                 "backup": with_today(bat.get(CONF_BACKUP_LOADS)),
+                # can only give power to its backup loads: the card shows its input
+                # (charge sensor) on the house side and its output on the backup line
+                "backup_only": bool(bat.get(CONF_BATTERY_BACKUP_ONLY)),
+                "charge": bat.get(CONF_BATTERY_CHARGE),
+                "discharge": bat.get(CONF_BATTERY_DISCHARGE),
             }
             for i, bat in enumerate(hub.batteries, start=1)
         ],

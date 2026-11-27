@@ -38,6 +38,7 @@ interface Battery {
   soc?: string;
   capacity_kwh?: number;
   backup_loads?: string[];
+  backup_only?: boolean;
 }
 
 interface Options {
@@ -168,6 +169,7 @@ function batterySchema(b: Battery, allowBackup = true): Schema {
     { name: "soc", selector: SENSOR },
     { name: "capacity_kwh", selector: { number: { min: 0, max: 200, step: 0.1, mode: "box", unit_of_measurement: "kWh" } } },
     ...(allowBackup ? [{ name: "backup_loads", selector: SENSORS }] : []),
+    ...(allowBackup && b.mode === "split" ? [{ name: "backup_only", selector: { boolean: {} } }] : []),
   ];
 }
 
@@ -238,6 +240,7 @@ const LABELS: Record<string, string> = {
   invert: "Sensor zählt Laden negativ",
   charge_power: "Ladeleistung",
   discharge_power: "Entladeleistung",
+  backup_only: "Entlädt nur über Notstrom (nicht ins Haus)",
   grid_mode: "Netzleistung gemessen als",
   grid_import_power: "Bezug (z. B. Tibber „Leistung“)",
   grid_export_power: "Einspeisung (z. B. Tibber „Leistung Produktion“)",
@@ -460,6 +463,7 @@ export class EnergieflussEditor extends LitElement {
         } else {
           delete out.charge_power;
           delete out.discharge_power;
+          delete out.backup_only;
         }
         return out;
       })
@@ -885,7 +889,11 @@ export class EnergieflussEditor extends LitElement {
               data,
               (ev) => this._onBattery(i, ev),
               { backup_loads: "Notstrom-Abgang: Verbraucher an dieser Batterie" },
-              { backup_loads: "Geräte am eigenen Ausgang der Batterie (z. B. Zendure, Ecoflow). Zählen zum Notstrom." },
+              {
+                backup_loads: "Geräte am eigenen Ausgang der Batterie (z. B. Zendure, Ecoflow). Zählen zum Notstrom.",
+                backup_only:
+                  "Für Geräte wie EcoFlow, die nicht ins Haus einspeisen können: Ladeleistung = Eingang aus dem Haus (auch was nur durchgeleitet wird), Entladeleistung = Ausgang an die Notstrom-Geräte.",
+              },
             )}
             ${this._batteryLive(b, i)}
           </div>`;

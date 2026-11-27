@@ -1,6 +1,10 @@
-# Energiefluss
+<p align="center">
+  <img src="docs/logo.png" alt="Energiefluss logo" width="160">
+</p>
 
-**Animated energy flow for Home Assistant — PV, batteries, grid, house and every load, in one card.**
+<h1 align="center">Energiefluss</h1>
+
+<p align="center"><b>Animated energy flow for Home Assistant — PV, batteries, grid, house and every load, in one card.</b></p>
 
 Energiefluss is a Home Assistant custom integration with two Lovelace cards:
 
@@ -34,19 +38,21 @@ The integration does the bookkeeping (energy balance, missing values, daily ener
 - Batteries: up to 5, each with power, state of charge and capacity; power as one signed sensor or as separate charge / discharge sensors.
 - Grid: one signed sensor or separate import / export sensors; current price (e.g. Tibber) and feed-in tariff.
 - Loads in two groups: **Grundlast** (base load) and **Zusatzverbraucher** (additional / controllable loads); loads contained in other loads (e.g. a kettle measured inside a sub-distribution) are counted only once.
-- Backup outputs: up to 2 batteries can feed their own backup loads.
+- Backup outputs: up to 2 batteries can feed their own backup loads. Batteries that cannot feed the house at all (e.g. EcoFlow on its own sockets) can be marked *only via backup*: their input (incl. pass-through) counts on the house side, their output only goes to their backup loads.
 - Wallbox / EV with the car's state of charge.
 - Fills gaps: if one of house, grid, PV or a single battery is not measured, it is calculated from the others.
 - Own sensors: totals per group, *not measured* (house minus all measured loads), surplus, battery totals, and daily energy (since midnight or rolling 24 h) for every load and for house, PV, grid and batteries – kept across restarts.
 
 **Glass card**
 
-- Trains of balls instead of single dots: one **big ball per full 1000 W**, one **small ball per started 100 W** of the rest – big ones always lead, so you can read the power off the train.
+- Trains of balls instead of single dots: one **big ball per full 1000 W**, one **medium ball per full 100 W** and one **small ball per full 10 W** of the rest (below 10 W no ball) – bigger ones always lead, so you can read the power off the train.
 - Ball colours show where the power comes from: **yellow** PV, **green** battery, **blue** grid – for the house, every load, the wallbox and charging batteries.
 - Where lines meet (PV total, house, storage) the trains run into a wobbling mercury drop and leave it counted anew.
 - Batteries and the car fill with sloshing liquid up to their state of charge; drops fall in while charging, bubbles rise into the line while discharging.
 - Long load lists show the biggest daily consumers first (8 base loads, 3 additional loads) and fold the rest behind "+ N weitere".
 - Lines route around batteries automatically.
+- The PV strings sit on a glass solar panel.
+- Click any value to open its sensor.
 
 ---
 
@@ -114,7 +120,7 @@ python -m pytest
 - This is a private hobby project. It is **not affiliated with, endorsed by or connected to** Home Assistant / Nabu Casa, HACS, any inverter, battery, wallbox or energy provider (e.g. Sunsynk, Tibber, Senec, Zendure, EcoFlow) or any other company. All product names and trademarks belong to their owners.
 - The values shown and the sensors created are **calculated from your own sensors** and can be incomplete, delayed or wrong (missing sensors, rounding, different update intervals). **Do not use them for billing, safety-relevant decisions or to control equipment** without checking them yourself.
 - The software is provided **"as is", without warranty of any kind**, see [LICENSE](LICENSE). Use at your own risk.
-- The pictures of the glass car and the glass inverter were created with an AI image generator (Google Gemini) and then processed for the card.
+- The pictures of the glass car, the glass inverter and the logo were created with an AI image generator (Google Gemini) and then processed for this project.
 
 ## License
 
@@ -140,6 +146,6 @@ Bundled third-party code and icons keep their own (GPL-compatible) licenses: see
 
 - **Installation:** in HACS als benutzerdefiniertes Repository (Typ *Integration*) hinzufügen, installieren, Home Assistant neu starten, dann unter *Einstellungen → Geräte & Dienste* die Integration *Energiefluss* hinzufügen.
 - **Einrichtung:** über die Seite *Energiefluss* in der Seitenleiste oder den Editor der Karte; *Sensoren erkennen* schlägt passende Sensoren vor.
-- **Glas-Karte:** Kugelzüge zählen die Leistung (große Kugel je 1000 W, kleine je angefangene 100 W), Farben zeigen die Herkunft (gelb PV, grün Akku, blau Netz).
+- **Glas-Karte:** Kugelzüge zählen die Leistung (große Kugel je volle 1000 W, mittlere je 100 W, kleine je 10 W), Farben zeigen die Herkunft (gelb PV, grün Akku, blau Netz).
 - **Haftungsausschluss:** privates Hobbyprojekt ohne Verbindung zu den genannten Firmen; alle Werte sind berechnet und ohne Gewähr – nicht für Abrechnung oder Steuerung verwenden. Nutzung auf eigene Gefahr.
 - **Lizenz:** GNU GPL Version 3 oder später – nutzen, ändern und weitergeben erlaubt; wer es weitergibt, muss es ebenfalls unter der GPL und mit Quellcode weitergeben.

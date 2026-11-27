@@ -20,9 +20,9 @@ and artwork from the following projects. Their licenses apply to those parts.
 
 ## Glass pictures
 
-- `car-glass.png` and `inverter-glass.png` (sources in `dev/assets/`) were generated
-  with Google Gemini and edited for this project; they are part of this project
-  and covered by its license.
+- `car-glass.png`, `inverter-glass.png` and the logo / icon (`docs/logo.png`,
+  `docs/brand/`; sources in `dev/assets/`) were generated with Google Gemini and
+  edited for this project; they are part of this project and covered by its license.
 
 ---
 

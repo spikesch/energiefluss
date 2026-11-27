@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Energiefluss einrichten",
-        "description": "Gib deiner Anlage einen Namen. Die Sensoren ordnest du danach im visuellen Editor zu: in der Seitenleiste unter **Energiefluss** ([öffnen]({url})).",
+        "title": "Wattrio Energiefluss einrichten",
+        "description": "Gib deiner Anlage einen Namen. Die Sensoren ordnest du danach im visuellen Editor zu: in der Seitenleiste unter **Wattrio** ([öffnen]({url})).",
         "data": {
           "name": "Name der Anlage"
         }
@@ -14,7 +14,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Energiefluss bearbeiten",
+        "title": "Wattrio bearbeiten",
         "description": "Die Anlage wird im visuellen Editor bearbeitet: **[Editor öffnen]({url})**\n\nHier gibt es nichts weiter einzustellen."
       }
     }

@@ -1,4 +1,4 @@
-// "Energiefluss Glas": same data, layout and editor as the classic card, drawn
+// "Wattrio Glas": same data, layout and editor as the classic card, drawn
 // as 2.5D glass: glass slabs, glass tubes with glowing balls running through
 // them, a glass house and pylon and batteries filled with moving liquid.
 // Everything animated stays filter-free so the card stays light on the CPU.
@@ -1340,8 +1340,8 @@ window.customCards = window.customCards ?? [];
 if (!window.customCards.some((c) => c.type === "energiefluss-glass-card")) {
   window.customCards.push({
     type: "energiefluss-glass-card",
-    name: "Energiefluss Glas",
-    description: "Energiefluss im 2.5D-Glas-Look mit Glasrohren und leuchtenden Zügen – gleiche Daten wie die Energiefluss-Karte.",
+    name: "Wattrio Energiefluss Glas",
+    description: "Wattrio: Energiefluss im 2.5D-Glas-Look mit Glasrohren und leuchtenden Kugelzügen – gleiche Daten wie Wattrio Klassik.",
     preview: true,
   });
 }

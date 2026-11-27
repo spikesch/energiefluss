@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Energiefluss",
-        "description": "Give your system a name. Afterwards assign the sensors in the visual editor: **Energiefluss** in the sidebar ([open]({url})).",
+        "title": "Set up Wattrio Energiefluss",
+        "description": "Give your system a name. Afterwards assign the sensors in the visual editor: **Wattrio** in the sidebar ([open]({url})).",
         "data": {
           "name": "System name"
         }
@@ -14,7 +14,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Edit Energiefluss",
+        "title": "Edit Wattrio",
         "description": "The system is edited in the visual editor: **[Open editor]({url})**\n\nThere is nothing else to set here."
       }
     }

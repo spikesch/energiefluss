@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## Unreleased
+
+**Deutsch**
+
+- Neuer Name: **Wattrio Energiefluss** (Wattrio = Watt + Trio: PV, Akku, Netz). Karten heißen jetzt *Wattrio Energiefluss Glas* und *Wattrio Energiefluss Klassik*, die Seitenleiste *Wattrio*. Die technische Kennung `energiefluss` bleibt, bestehende Einrichtungen laufen unverändert weiter.
+
+**English**
+
+- New name: **Wattrio Energiefluss** (Wattrio = watt + trio: PV, battery, grid). The cards are now called *Wattrio Energiefluss Glas* and *Wattrio Energiefluss Klassik*, the sidebar page *Wattrio*. The technical id `energiefluss` stays, existing setups keep working unchanged.
+
 ## 0.3.0
 
 **Deutsch**

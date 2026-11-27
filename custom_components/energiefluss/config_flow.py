@@ -28,13 +28,13 @@ class EnergieflussConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(
-                title=user_input[CONF_NAME].strip() or "Energiefluss",
+                title=user_input[CONF_NAME].strip() or "Wattrio",
                 data={},
                 options={CONF_ENERGY_PERIOD: PERIOD_MIDNIGHT},
             )
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({vol.Required(CONF_NAME, default="Energiefluss"): TextSelector()}),
+            data_schema=vol.Schema({vol.Required(CONF_NAME, default="Wattrio"): TextSelector()}),
             description_placeholders={"url": f"/{PANEL_URL_PATH}"},
         )
 

@@ -1,4 +1,4 @@
-// Sidebar page "Energiefluss": live preview of the card next to the shared
+// Sidebar page "Wattrio": live preview of the card next to the shared
 // editor (<energiefluss-editor>) for one instance.
 
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
@@ -51,7 +51,7 @@ export class EnergieflussPanel extends LitElement {
   protected render() {
     const toolbar = html`<div class="toolbar ${this.narrow ? "narrow" : ""}">
       <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
-      <div class="title">Energiefluss</div>
+      <div class="title">Wattrio</div>
       ${this._instances.length > 1
         ? html`<select @change=${(e: Event) => (this._entryId = (e.target as HTMLSelectElement).value)}>
             ${this._instances.map(
@@ -65,7 +65,7 @@ export class EnergieflussPanel extends LitElement {
     if (!this._entryId) {
       return html`${toolbar}<div class="empty">
         Noch keine Anlage angelegt. Unter Einstellungen → Geräte &amp; Dienste → Integration hinzufügen →
-        „Energiefluss“ eine Anlage anlegen.
+        „Wattrio“ eine Anlage anlegen.
       </div>`;
     }
     return html`

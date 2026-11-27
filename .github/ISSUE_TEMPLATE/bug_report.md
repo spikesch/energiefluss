@@ -10,9 +10,9 @@ labels: bug
 
 **Versions / Versionen**
 
-- Energiefluss:
+- Wattrio Energiefluss:
 - Home Assistant:
-- Card / Karte: Energiefluss / Energiefluss Glas
+- Card / Karte: Wattrio Energiefluss Glas / Klassik
 - Browser / App:
 
 **Sensors / Sensoren**

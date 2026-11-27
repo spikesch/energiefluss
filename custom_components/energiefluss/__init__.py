@@ -1,4 +1,4 @@
-"""Energiefluss: normalizes energy sensors and ships a power flow card."""
+"""Wattrio (technical name: energiefluss): normalizes energy sensors and ships the power flow cards."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             frontend_url_path=PANEL_URL_PATH,
             webcomponent_name="energiefluss-panel",
             module_url=f"{CARD_URL_BASE}/{PANEL_FILENAME}?v={version}",
-            sidebar_title="Energiefluss",
+            sidebar_title="Wattrio",
             sidebar_icon="mdi:transit-connection-variant",
             require_admin=False,
             embed_iframe=False,
@@ -232,7 +232,7 @@ def ws_get_config(
     if wanted := msg.get("entry_id"):
         entries = [e for e in entries if e.entry_id == wanted]
     if not entries:
-        connection.send_error(msg["id"], "not_found", "Keine Energiefluss-Instanz gefunden")
+        connection.send_error(msg["id"], "not_found", "Keine Wattrio-Instanz gefunden")
         return
     connection.send_result(
         msg["id"], {"instance": _describe(hass, entries[0]), "instances": instances}

@@ -93,7 +93,7 @@ export class EnergieflussCardEditor extends LitElement {
     if (!this._ready || !this._config) return html`<div class="hint">Lade …</div>`;
     if (!this._instances.length) {
       return html`<div class="hint">
-        Noch keine Anlage angelegt: Einstellungen → Geräte &amp; Dienste → Integration hinzufügen → „Energiefluss“.
+        Noch keine Anlage angelegt: Einstellungen → Geräte &amp; Dienste → Integration hinzufügen → „Wattrio“.
       </div>`;
     }
     return html`

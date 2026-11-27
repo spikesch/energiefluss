@@ -1,5 +1,5 @@
 import { i as g, A as u, b as s, a as f, n as p, r as d } from "./energiefluss-shared-4XYPgQBE.js";
-var y = Object.defineProperty, a = (c, t, e, n) => {
+var y = Object.defineProperty, n = (c, t, e, a) => {
   for (var i = void 0, o = c.length - 1, h; o >= 0; o--)
     (h = c[o]) && (i = h(t, e, i) || i);
   return i && y(t, e, i), i;
@@ -20,13 +20,13 @@ const l = class l extends g {
   }
   async _mountCard(t, e) {
     await customElements.whenDefined("energiefluss-card");
-    const n = document.createElement("energiefluss-card");
-    n.setConfig({ type: "custom:energiefluss-card", entry_id: e }), n.hass = this.hass, t.replaceChildren(n), this._card = n;
+    const a = document.createElement("energiefluss-card");
+    a.setConfig({ type: "custom:energiefluss-card", entry_id: e }), a.hass = this.hass, t.replaceChildren(a), this._card = a;
   }
   render() {
     const t = s`<div class="toolbar ${this.narrow ? "narrow" : ""}">
       <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
-      <div class="title">Energiefluss</div>
+      <div class="title">Wattrio</div>
       ${this._instances.length > 1 ? s`<select @change=${(e) => this._entryId = e.target.value}>
             ${this._instances.map(
       (e) => s`<option value=${e.entry_id} ?selected=${e.entry_id === this._entryId}>${e.title}</option>`
@@ -41,7 +41,7 @@ const l = class l extends g {
       </div>
     ` : s`${t}<div class="empty">
         Noch keine Anlage angelegt. Unter Einstellungen → Geräte &amp; Dienste → Integration hinzufügen →
-        „Energiefluss“ eine Anlage anlegen.
+        „Wattrio“ eine Anlage anlegen.
       </div>` : s`${t}<div class="empty">Lade …</div>`;
   }
 };
@@ -113,19 +113,19 @@ l.styles = f`
     }
   `;
 let r = l;
-a([
+n([
   p({ attribute: !1 })
 ], r.prototype, "hass");
-a([
+n([
   p({ type: Boolean })
 ], r.prototype, "narrow");
-a([
+n([
   d()
 ], r.prototype, "_instances");
-a([
+n([
   d()
 ], r.prototype, "_entryId");
-a([
+n([
   d()
 ], r.prototype, "_loaded");
 customElements.get("energiefluss-panel") || customElements.define("energiefluss-panel", r);

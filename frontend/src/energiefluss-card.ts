@@ -232,7 +232,7 @@ export class EnergieflussCard extends LitElement {
     } catch (err) {
       this._error =
         (err as { message?: string })?.message ??
-        "Energiefluss-Integration nicht gefunden. Bitte unter Einstellungen → Geräte & Dienste einrichten.";
+        "Wattrio-Integration nicht gefunden. Bitte unter Einstellungen → Geräte & Dienste einrichten.";
     } finally {
       this._loading = false;
     }
@@ -1226,12 +1226,12 @@ export class EnergieflussCard extends LitElement {
       return html`<ha-card><div class="msg">${this._error}</div></ha-card>`;
     }
     if (!this._layout || !this.hass) {
-      return html`<ha-card><div class="msg">Lade Energiefluss …</div></ha-card>`;
+      return html`<ha-card><div class="msg">Lade Wattrio …</div></ha-card>`;
     }
     const title = this._config?.title;
     return html`
       <ha-card .header=${title ?? nothing}>
-        <svg viewBox=${`0 0 ${VIEW_W} ${this._viewH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Energiefluss"
+        <svg viewBox=${`0 0 ${VIEW_W} ${this._viewH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wattrio – Energiefluss"
           @click=${this._onTap}>
           ${this._defs()} ${this._solar()} ${this._batteries()} ${this._inverter()} ${this._home()} ${this._grid()}
           ${this._overlay()}
@@ -1310,8 +1310,8 @@ window.customCards = window.customCards ?? [];
 if (!window.customCards.some((c) => c.type === "energiefluss-card")) {
   window.customCards.push({
     type: "energiefluss-card",
-    name: "Energiefluss",
-    description: "Animierter Energiefluss – konfiguriert über die Energiefluss-Integration.",
+    name: "Wattrio Energiefluss Klassik",
+    description: "Wattrio: animierter Energiefluss im klassischen, flachen Look – eingerichtet über die Wattrio-Integration.",
     preview: true,
   });
 }

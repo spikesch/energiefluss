@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Energiefluss logo" width="160">
+  <img src="docs/logo.png" alt="Wattrio logo" width="160">
 </p>
 
-<h1 align="center">Energiefluss</h1>
+<h1 align="center">Wattrio Energiefluss</h1>
 
 <p align="center">
   <b>Animierter Energiefluss für Home Assistant – PV, Akkus, Netz, Haus und jeder Verbraucher in einer Karte.</b><br>
@@ -11,12 +11,12 @@
 
 <p align="center"><a href="#deutsch">🇩🇪 Deutsch</a> · <a href="#english">🇬🇧 English</a></p>
 
-![Energiefluss Glas](docs/glass-card.png)
+![Wattrio Glas](docs/glass-card.png)
 
 <details>
 <summary>Klassische Karte / Classic look</summary>
 
-![Energiefluss](docs/classic-card.png)
+![Wattrio Klassik](docs/classic-card.png)
 
 </details>
 
@@ -28,10 +28,10 @@
 
 # 🇩🇪 Deutsch
 
-Energiefluss ist eine Home-Assistant-Integration mit zwei Lovelace-Karten:
+**Wattrio** – aus *Watt* und *Trio*: die drei Quellen PV, Akku und Netz, die in der Karte gelb, grün und blau fließen – ist eine Home-Assistant-Integration mit zwei Lovelace-Karten:
 
-- **Energiefluss Glas** – 2.5D-Glasoptik: Glasrohre, Züge aus leuchtenden Kugeln, deren Anzahl die Leistung zeigt, Akkus mit schwappender Flüssigkeit, ein Glasauto an der Wallbox.
-- **Energiefluss** – die klassische, flache Darstellung mit denselben Daten.
+- **Wattrio Energiefluss Glas** – 2.5D-Glasoptik: Glasrohre, Züge aus leuchtenden Kugeln, deren Anzahl die Leistung zeigt, Akkus mit schwappender Flüssigkeit, ein Glasauto an der Wallbox.
+- **Wattrio Energiefluss Klassik** – die klassische, flache Darstellung mit denselben Daten.
 
 Die Integration übernimmt die Rechenarbeit (Energiebilanz, fehlende Werte, Tageszähler), die Karten zeichnen nur. Alles wird in einem visuellen Editor eingerichtet – ohne YAML.
 
@@ -52,7 +52,7 @@ Daneben gibt es **Notstrom-Verbraucher**: Geräte, die direkt am eigenen Ausgang
 
 **Integration**
 
-- Einrichtung in einer eigenen Seite *Energiefluss* in der Seitenleiste und im Dialog „Karte bearbeiten“.
+- Einrichtung in einer eigenen Seite *Wattrio* in der Seitenleiste und im Dialog „Karte bearbeiten“.
 - *Sensoren erkennen*: schlägt PV-Strings, Akkus, Netz, Preise, Wallbox und Verbraucher aus deinen vorhandenen Entitäten vor.
 - PV: bis zu 4 Strings, Gesamtleistung, Ertrag heute, Prognose Rest.
 - Akkus: bis zu 5, jeweils mit Leistung, Ladestand und Kapazität; Leistung als ein Sensor mit Vorzeichen oder als getrennte Sensoren für Laden und Entladen.
@@ -79,16 +79,18 @@ Daneben gibt es **Notstrom-Verbraucher**: Geräte, die direkt am eigenen Ausgang
 **HACS (benutzerdefiniertes Repository)**
 
 1. HACS → ⋮ → *Benutzerdefinierte Repositories* → `https://github.com/spikesch/energiefluss` hinzufügen, Typ **Integration**.
-2. **Energiefluss** installieren und Home Assistant neu starten.
-3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Energiefluss*, einen Namen vergeben.
+2. **Wattrio Energiefluss** installieren und Home Assistant neu starten.
+3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Wattrio Energiefluss*, einen Namen vergeben.
 
 **Manuell:** den Ordner `custom_components/energiefluss` nach `config/custom_components/` kopieren und neu starten.
+
+Die technische Kennung der Integration und der Karten lautet weiterhin `energiefluss` (Ordner, Kartentypen, Sensor-IDs).
 
 Die Karten registriert die Integration selbst – eine eigene Lovelace-Ressource ist nicht nötig.
 
 ## Einrichtung
 
-1. In der Seitenleiste **Energiefluss** öffnen (oder bei der Integration auf *Konfigurieren*).
+1. In der Seitenleiste **Wattrio** öffnen (oder bei der Integration auf *Konfigurieren*).
 2. **Sensoren erkennen** für Vorschläge, oder die Sensoren Abschnitt für Abschnitt selbst wählen: *Solar, Batterien, Netz, Wallbox / E-Auto, Verbraucher*.
 3. Speichern – die Sensoren der Integration entstehen sofort.
 
@@ -132,7 +134,7 @@ Ebenfalls ein **Template-Sensor**. Damit er bei einem ausgefallenen Quellsensor 
 
 ## Karten
 
-Karte über die Kartenauswahl hinzufügen (*Energiefluss* oder *Energiefluss Glas*) oder per YAML:
+Karte über die Kartenauswahl hinzufügen (*Wattrio Energiefluss Glas* oder *… Klassik*) oder per YAML:
 
 ```yaml
 type: custom:energiefluss-glass-card   # oder custom:energiefluss-card
@@ -165,10 +167,10 @@ Kurz: Nutzen, ändern und weitergeben ist erlaubt; wer es weitergibt – veränd
 
 # 🇬🇧 English
 
-Energiefluss is a Home Assistant custom integration with two Lovelace cards:
+**Wattrio** – from *Watt* and *trio*: the three sources PV, battery and grid that flow yellow, green and blue through the card – is a Home Assistant custom integration with two Lovelace cards:
 
-- **Energiefluss Glas** – a 2.5D glass look: glass tubes, trains of glowing balls whose number shows the power, batteries filled with sloshing liquid, a glass car at the wallbox.
-- **Energiefluss** – the classic, flat look with the same data.
+- **Wattrio Energiefluss Glas** – a 2.5D glass look: glass tubes, trains of glowing balls whose number shows the power, batteries filled with sloshing liquid, a glass car at the wallbox.
+- **Wattrio Energiefluss Klassik** – the classic, flat look with the same data.
 
 The integration does the bookkeeping (energy balance, missing values, daily energy counters); the cards only draw. Everything is set up in a visual editor – no YAML needed.
 
@@ -189,7 +191,7 @@ In addition there are **backup loads**: devices on a battery's own output (e.g. 
 
 **Integration**
 
-- Setup in its own sidebar page *Energiefluss* and in the card's "edit card" dialog.
+- Setup in its own sidebar page *Wattrio* and in the card's "edit card" dialog.
 - *Detect sensors*: suggests PV strings, batteries, grid, prices, wallbox and loads from your existing entities.
 - PV: up to 4 strings, total, today's yield, forecast rest.
 - Batteries: up to 5, each with power, state of charge and capacity; power as one signed sensor or as separate charge / discharge sensors.
@@ -216,16 +218,18 @@ In addition there are **backup loads**: devices on a battery's own output (e.g. 
 **HACS (custom repository)**
 
 1. HACS → ⋮ → *Custom repositories* → add `https://github.com/spikesch/energiefluss`, type **Integration**.
-2. Install **Energiefluss**, then restart Home Assistant.
-3. *Settings → Devices & services → Add integration → Energiefluss*, give it a name.
+2. Install **Wattrio Energiefluss**, then restart Home Assistant.
+3. *Settings → Devices & services → Add integration → Wattrio Energiefluss*, give it a name.
 
 **Manual:** copy `custom_components/energiefluss` into `config/custom_components/` and restart.
+
+The technical id of the integration and the cards stays `energiefluss` (folder, card types, sensor ids).
 
 The cards are registered by the integration itself – there is no separate Lovelace resource to add.
 
 ## Setup
 
-1. Open **Energiefluss** in the sidebar (or the integration's *Configure* link).
+1. Open **Wattrio** in the sidebar (or the integration's *Configure* link).
 2. Click **Sensoren erkennen** (detect sensors) for suggestions, or pick the sensors section by section: *Solar, Batterien, Netz, Wallbox / E-Auto, Verbraucher*.
 3. Save – the integration's sensors are created right away.
 
@@ -269,7 +273,7 @@ also a **template sensor**. Use `| float(0)` so it does not become "unknown" whe
 
 ## Cards
 
-Add a card from the card picker (*Energiefluss* or *Energiefluss Glas*) or in YAML:
+Add a card from the card picker (*Wattrio Energiefluss Glas* or *… Klassik*) or in YAML:
 
 ```yaml
 type: custom:energiefluss-glass-card   # or custom:energiefluss-card

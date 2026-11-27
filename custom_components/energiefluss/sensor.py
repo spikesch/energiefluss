@@ -165,7 +165,7 @@ def _device(hub: EnergieflussHub) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, hub.entry.entry_id)},
         name=hub.entry.title,
-        manufacturer="Energiefluss",
+        manufacturer="Wattrio",
         model="Energiefluss",
     )
 

@@ -62,6 +62,9 @@ export interface ListLoad extends Load {
   source?: string;
   label?: string; // shown instead of the entity's name
   tip?: string; // tooltip instead of the default one
+  // the "+ N weitere" / "− weniger" row of a folded list: toggles the group,
+  // shows the sum of the hidden loads (power, today's energy) and gets their train
+  more?: { group: string; power: number | null; today: number | null };
 }
 
 /** One group of loads on the right with its position and feed path. */
@@ -319,6 +322,10 @@ export class EnergieflussCard extends LitElement {
   protected get _invX(): number {
     return INV_X;
   }
+  /** Top of the house value box (70 x 26 at x 215). */
+  protected get _houseY(): number {
+    return 70;
+  }
   /** Top edge of the inverter box. */
   protected get _invY(): number {
     return 170;
@@ -408,15 +415,17 @@ export class EnergieflussCard extends LitElement {
   protected _lineFlow(name: string, p: number | null): number | null {
     const bat = this._layout?.batteries.find((b) => b.name === name);
     if (bat?.backup_only) return Math.max(this._w(bat.charge) ?? 0, 0);
-    return p;
+    // its backup loads take their share straight from it; only the rest
+    // runs between the battery and the house
+    if (p === null || !bat?.backup?.length) return p;
+    return p + Math.max(this._sumW(bat.backup) ?? 0, 0);
   }
 
-  /** Power the backup-only batteries give out (to loads that are not on the house net):
-   *  their measured output, so loads that are only sometimes on them do not count. */
+  /** Active power of all backup loads: batteries feed them straight from their own
+   *  output, they are not on the house net. Their own sensors, not a battery's
+   *  output (that may be apparent power and include its own consumption). */
   protected get _offGridLoads(): number {
-    return (this._layout?.batteries ?? [])
-      .filter((b) => b.backup_only)
-      .reduce((s, b) => s + Math.max(this._w(b.discharge) ?? 0, 0), 0);
+    return (this._layout?.batteries ?? []).reduce((s, b) => s + Math.max(this._sumW(b.backup ?? []) ?? 0, 0), 0);
   }
 
   /** Horizontal offset of the whole storage area (n = number of batteries). */
@@ -586,8 +595,8 @@ export class EnergieflussCard extends LitElement {
     const n = shown.length;
     // what flows on the storage lines (see _lineFlow)
     const nets = shown.map((b) => this._lineFlow(b.name, num(this._s(b.power))));
-    const anyBackupOnly = shown.some((b) => b.backup_only);
-    const total = anyBackupOnly
+    const anyBackup = shown.some((b) => b.backup_only || (b.backup ?? []).length);
+    const total = anyBackup
       ? nets.reduce<number | null>((s, w) => (w === null ? s : (s ?? 0) + w), null)
       : this._own("battery_power");
     // flush with the outer edges of the battery boxes below
@@ -690,11 +699,11 @@ export class EnergieflussCard extends LitElement {
     const groups: LoadGroup[] = [];
     const R = this._rowH;
     const mid = R / 2 - 1; // middle of a row (10 at the classic 22)
-    let y = 22; // baseline of the first title
+    let y = this._groupsTop; // baseline of the first title
     const add = (
       title: string,
       colour: string,
-      loads: (Load & { label?: string; tip?: string })[],
+      loads: (Load & { label?: string; tip?: string; more?: ListLoad["more"] })[],
       power: number | null,
       trunk: (rowY: number, lineY: number) => string,
       source?: string,
@@ -712,12 +721,24 @@ export class EnergieflussCard extends LitElement {
       const foldable = limit !== null && loads.length > limit;
       const expanded = this._expanded.has(title);
       let shown = loads;
-      if (foldable && !expanded) {
+      if (foldable) {
         const today = (l: Load) => num(this._s(l.today)) ?? 0;
         const keep = new Set([...loads].sort((a, b) => today(b) - today(a)).slice(0, limit));
-        shown = loads.filter((l) => keep.has(l));
+        const hidden = loads.filter((l) => !keep.has(l));
+        const sumToday = hidden.reduce<number | null>((sum, l) => {
+          const v = num(this._s(l.today));
+          return v === null ? sum : (sum ?? 0) + v;
+        }, null);
+        // the folded loads as one row with their sums; unfolded only "− weniger"
+        const moreRow = {
+          entity: "",
+          today: null,
+          label: expanded ? "− weniger" : `+ ${hidden.length} weitere`,
+          more: { group: title, power: expanded ? null : this._sumW(hidden), today: expanded ? null : sumToday },
+        };
+        shown = [...(expanded ? loads : loads.filter((l) => keep.has(l))), moreRow];
       }
-      const rows = rowCount(shown) + (foldable ? 1 : 0);
+      const rows = rowCount(shown);
       const y0 = Math.max(y + 6, exit ? exit.pref - 10 : 0);
       const lineY = exit ? Math.min(Math.max(y0 + mid, exit.lo), exit.hi) : y0 + mid;
       const path = trunk(y0 + mid, lineY);
@@ -749,25 +770,26 @@ export class EnergieflussCard extends LitElement {
       });
     }
     const lane = this._laneFinder();
+    const hy = this._houseY;
     add(
       "Grundlast",
       c.home,
       fixed,
       this._sumW(fixed),
-      (t) => `M 285 79 H ${lane(300, 79, t)} V ${t} H ${bracket}`,
+      (t) => `M 285 ${hy + 9} H ${lane(300, hy + 9, t)} V ${t} H ${bracket}`,
       undefined,
       undefined,
-      () => this._houseLead(79),
+      () => this._houseLead(hy + 9),
     );
     add(
       "Zusätzlich",
       c.flexible,
       L.loads.flexible,
       this._sumW(L.loads.flexible),
-      (t) => `M 285 89 H ${lane(306, 89, t)} V ${t} H ${bracket}`,
+      (t) => `M 285 ${hy + 19} H ${lane(306, hy + 19, t)} V ${t} H ${bracket}`,
       undefined,
       undefined,
-      () => this._houseLead(89),
+      () => this._houseLead(hy + 19),
     );
     // Wallbox / car: fed from the inverter's right side, straight if there is room
     const wb = L.wallbox;
@@ -812,6 +834,16 @@ export class EnergieflussCard extends LitElement {
     return groups;
   }
 
+  /** Baseline of the first load group's title. */
+  protected get _groupsTop(): number {
+    return 22;
+  }
+
+  /** Drawn above all load groups (nothing in the classic look); `home` = total consumption. */
+  protected _listsHeader(_home: number | null): SVGTemplateResult {
+    return svg``;
+  }
+
   /** Show "heute" / "24 h" above the energy column of the load lists. */
   protected get _periodLabel(): boolean {
     return true;
@@ -843,17 +875,6 @@ export class EnergieflussCard extends LitElement {
   /** Sort idle loads by today's energy (after the running ones) instead of by name. */
   protected get _idleByEnergy(): boolean {
     return false;
-  }
-
-  /** The "+ N weitere" / "− weniger" row below a folded list. */
-  protected _moreRow(g: LoadGroup): SVGTemplateResult {
-    const R = this._rowH;
-    const y = g.y0 + (g.rows - 1) * R;
-    const text = g.more!.expanded ? "− weniger" : `+ ${g.more!.hidden} weitere`;
-    return svg`<g class="more" @click=${() => this._toggleList(g.title)}>
-      <rect x=${LOAD_X0 - 8} y=${y} width=${LOAD_X1 - LOAD_X0 + 8} height=${R} fill="transparent" />
-      <text x=${LOAD_X0 + 2} y=${y + R * 0.62} class="small" fill=${g.colour}>${text}</text>
-    </g>`;
   }
 
   protected _toggleList(title: string): void {
@@ -925,8 +946,8 @@ export class EnergieflussCard extends LitElement {
           a.name.localeCompare(b.name)
         : (b.w ?? -Infinity) - (a.w ?? -Infinity) || a.name.localeCompare(b.name);
     const mains = loads
-      .map((l) => ({ ...l, w: this._w(l.entity), name: l.label ?? this._name(l.entity) }))
-      .sort(byPower);
+      .map((l) => ({ ...l, w: l.more ? l.more.power : this._w(l.entity), name: l.label ?? this._name(l.entity) }))
+      .sort((a, b) => Number(!!a.more) - Number(!!b.more) || byPower(a, b));
     // visual rows: each load, then its contained loads indented below it
     type Row = (typeof mains)[number] & { child: boolean; parentRow?: number };
     const rows: Row[] = [];
@@ -1007,11 +1028,25 @@ export class EnergieflussCard extends LitElement {
             </g>
             ${this._tap(l.today, this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy"))}`;
         }
+        const dots = this._bySize ? wagonDots(path(l, i), own(i), i) : this._dot(path(l, i), colour, l.w, true, 2.4);
+        if (l.more) {
+          const group = l.more.group;
+          return svg`
+            ${dots}
+            <g class="more" opacity=${l.more.power !== null && idle ? 0.55 : 1} @click=${() => this._toggleList(group)}>
+              <rect x=${LOAD_X0 - 8} y=${y} width=${LOAD_X1 - LOAD_X0 + 8} height=${R} fill="transparent" />
+              <text x=${LOAD_X0 + 2} y=${y + R * 0.62} class="small" fill=${colour}>${l.name}</text>
+              ${l.more.power !== null
+                ? this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")
+                : nothing}
+              ${l.more.today !== null
+                ? this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(l.more.today, this._loc), 8.5, "energy")
+                : nothing}
+            </g>`;
+        }
         const tip = l.tip ?? (l.source ? `${l.name} · gespeist von ${l.source}` : l.name);
         return svg`
-          ${this._bySize
-            ? wagonDots(path(l, i), own(i), i)
-            : this._dot(path(l, i), colour, l.w, true, 2.4)}
+          ${dots}
           <g opacity=${idle ? 0.45 : 1} class="tap" data-entity=${l.entity}>
             ${this._nameBox(l.name, y, colour, tip)}
             ${this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")}
@@ -1093,20 +1128,21 @@ export class EnergieflussCard extends LitElement {
     const home = this._own("home_power");
     const rest = this._own("unmeasured_power");
     const groups = this._groups();
-    const houseLine = `M ${this._invTop[0]} ${this._invTop[1]} V ${Math.min(152, this._invTop[1] - 8)} H 250 V 96`;
-    // the house value counts every consumer; the line from the inverter carries
-    // only what the house net supplies (not the loads a backup-only battery feeds)
+    const houseLine = `M ${this._invTop[0]} ${this._invTop[1]} V ${Math.min(152, this._invTop[1] - 8)} H 250 V ${this._houseY + 26}`;
+    // house value and line: what the house net supplies, without the backup loads
+    // the batteries feed directly
     const houseNet = home === null ? null : Math.max(home - this._offGridLoads, 0);
 
     return svg`
       ${this._houseIcon(c)}
       ${rest !== null && !this._unmeasuredInList
-        ? svg`<text x="256" y="112" class="tiny">nicht erfasst</text>
-              <text x="256" y="122" class="tiny val">${fmtPower(rest, this._loc)}</text>`
+        ? svg`<text x="256" y=${this._houseY + 42} class="tiny">nicht erfasst</text>
+              <text x="256" y=${this._houseY + 52} class="tiny val">${fmtPower(rest, this._loc)}</text>`
         : nothing}
       ${this._flow(houseLine, c, houseNet, true, false)}
       ${this._houseDots(this._houseIn() ?? houseLine, c, houseNet)}
       ${this._houseJunction(houseNet)}
+      ${groups.length ? this._listsHeader(home) : nothing}
       ${groups.length && this._periodLabel
         ? svg`<text x=${LOAD_X1 - LOAD_EW / 2} y="9" text-anchor="middle" class="tiny">${L.energy_period === "rolling24" ? "24 h" : "heute"}</text>`
         : nothing}
@@ -1117,12 +1153,11 @@ export class EnergieflussCard extends LitElement {
           ${this._groupIcon(g)}
           ${this._pipeTrunk ? nothing : this._flow(g.trunk, g.colour, g.power, true, false)}
           ${this._loadList(g.loads, g.y0, g.colour)}
-          ${g.more ? this._moreRow(g) : nothing}
         `,
       )}
-      ${this._tap(L.entities.home_power, this._box(215, 70, 70, 26, c, fmtPower(home, this._loc), 13))}
-      <text x="211" y="83" text-anchor="end" class="lbl">Haus</text>
-      <text x="211" y="95" text-anchor="end" class="tiny val">${fmtEnergy(num(this._s(L.home_today)), this._loc)}</text>
+      ${this._tap(L.entities.home_power, this._box(215, this._houseY, 70, 26, c, fmtPower(houseNet, this._loc), 13))}
+      <text x="211" y=${this._houseY + 13} text-anchor="end" class="lbl">Haus</text>
+      <text x="211" y=${this._houseY + 25} text-anchor="end" class="tiny val">${fmtEnergy(num(this._s(L.home_today)), this._loc)}</text>
     `;
   }
 

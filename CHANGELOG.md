@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- House value and line show what the house net supplies, without the backup loads batteries feed directly; a small "Gesamt" box above the load groups shows the total consumption incl. backup loads.
+- Batteries with backup loads: their line to the storage box shows only what goes beyond their own backup load; backup loads are subtracted by their own (active power) sensors.
+- Folded load lists: the "+ N weitere" row shows the sum of the hidden loads and gets their train.
+- Glass card: bigger glass house, placed higher.
+
 ## 0.2.0
 
 - Batteries can be marked *only via backup* (e.g. EcoFlow): their input counts on the house side, their output only feeds their backup loads; the house line and source colours follow.

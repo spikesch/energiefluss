@@ -140,7 +140,8 @@ const LABELS = (() => {
 })();
 const PV_BOX_Y = 82;
 const PV_MID: [number, number] = [104, PV_BOX_Y + 26]; // "PV gesamt", bottom edge
-const HOUSE_MID: [number, number] = [250, 96]; // house value box, bottom edge
+const HOUSE_Y = 58; // top of the house value box (higher than in the classic look)
+const HOUSE_MID: [number, number] = [250, HOUSE_Y + 26]; // house value box, bottom edge
 // the storage box sits higher than in the classic look (smaller inverter)
 const GLASS_STORE_Y = 196;
 const STORE_MID = GLASS_STORE_Y; // storage box, top edge
@@ -205,6 +206,7 @@ const PYLON_S = 0.7;
 const TILE_X = 8;
 const TILE_W = 54;
 const PANEL_GAP = 1.25; // air between two load group panels
+const TOTAL_H = 15; // the "Gesamt" box above the load groups
 const GRID_TILE_Y = 196;
 // Glass inverter picture: its top connector sits right below the house box,
 // all lines start or end at the tips of its connectors.
@@ -251,6 +253,10 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   protected get _solarX(): number {
     return 104;
   }
+  protected get _houseY(): number {
+    return HOUSE_Y;
+  }
+
   protected get _invY(): number {
     return INV_TOP[1];
   }
@@ -875,7 +881,8 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   /** 2.5D glass house: gable front, side wall, roof, chimney and warm windows. */
   protected _houseIcon(c: string): SVGTemplateResult {
     const warm = this._c.solar;
-    return svg`<g transform="translate(232 26) scale(0.7)">
+    // bigger glass house, its bottom just above the house value box
+    return svg`<g transform=${`translate(225 ${HOUSE_Y - 51}) scale(0.9)`}>
       <ellipse cx="28" cy="50" rx="30" ry="5" fill="url(#ef-shadow)" />
       <polygon points="4,28 14,18 42,6 32,16" fill=${c} fill-opacity="0.08" stroke=${RIM} stroke-opacity="0.3" stroke-width="0.7" />
       <polygon points="24,52 52,40 52,24 24,36" fill=${c} fill-opacity="0.12" stroke=${RIM} stroke-opacity="0.6" stroke-width="0.8" />
@@ -1065,6 +1072,25 @@ export class EnergieflussGlassCard extends EnergieflussCard {
 
   // -- load groups -------------------------------------------------------------
   /** Each group sits on its own tinted glass slab. */
+  // a small "Gesamt" box above all load groups: every consumer incl. backup loads
+  protected get _groupsTop(): number {
+    return 22 + TOTAL_H + PANEL_GAP;
+  }
+
+  protected _listsHeader(home: number | null): SVGTemplateResult {
+    const x = LOAD_X0 - 12;
+    const y = 4;
+    const c = this._c.home;
+    const today = num(this._s(this._layout?.home_today));
+    return this._tap(this._layout?.entities.home_power, svg`
+      ${this._panel(x, y, LOAD_X1 + 3 - x, TOTAL_H, c)}
+      <text x=${LOAD_X0 - 6} y=${y + TOTAL_H * 0.68} class="small grp" fill=${c}>Gesamt</text>
+      <text x=${LOAD_XP - 1} y=${y + TOTAL_H * 0.68} text-anchor="end" class="val" style=${`font-size:${this._fs(10)}px`}
+        font-weight="600">${fmtPower(home, this._loc)}</text>
+      <text x=${LOAD_X1 - 1} y=${y + TOTAL_H * 0.68} text-anchor="end" class="dim" style=${`font-size:${this._fs(9)}px`}
+        >${fmtEnergy(today, this._loc)}</text>`);
+  }
+
   protected _groupPanel(g: LoadGroup): SVGTemplateResult {
     const x = LOAD_X0 - 12;
     const top = g.titleY - 13;

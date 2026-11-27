@@ -2,6 +2,28 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.1
+
+**Deutsch**
+
+- Erkennung viel strenger: keine nicht verfügbaren Sensoren, keine Helfer wie Standby, Hauslast oder Überschuss, Batterien nur mit Ladestand, PV-Stränge statt doppelter Wechselrichter-Summe. Dieselbe Batterie über eine zweite Integration wird als doppelt markiert.
+- Einrichtung: alles Gefundene als Häkchenliste mit aktuellen Werten. Bei mehr als 5 Batterien kommt ein klarer Hinweis statt eines stillen Fehlers.
+- Die Seite **Wattrio** zeigt die Karte jetzt selbst, sofort und ohne Neuladen, mit Umschalter Glas/Klassik und Knopf **Einstellungen**. Das automatische Dashboard aus 0.4.0 entfällt (es blieb bis zum Neuladen leer).
+- Wattrio steht nach der Einrichtung ganz oben in der Seitenleiste.
+- Ohne zugeordnete Sensoren entstehen keine Sensoren mehr. „Alle leeren Felder füllen“ übernimmt höchstens 5 Batterien.
+
+Wer 0.4.0 eingerichtet hat: das Dashboard „Energiefluss“ löschen, die Integration entfernen und neu hinzufügen.
+
+**English**
+
+- Much stricter detection: no unavailable sensors, no helpers like standby, house load or surplus, batteries only with a state of charge, PV strings instead of a double-counted inverter total. The same battery seen through a second integration is marked as a duplicate.
+- Setup: everything found as a checklist with current values. More than 5 batteries gives a clear message instead of a silent failure.
+- The **Wattrio** page now shows the card itself, right away without reloading, with a Glas/Klassik switch and a **Einstellungen** (settings) button. The automatic dashboard of 0.4.0 is gone (it stayed empty until a reload).
+- After setup Wattrio is at the top of the sidebar.
+- No sensors are created while nothing is assigned. "Fill all empty fields" takes at most 5 batteries.
+
+If you set up 0.4.0: delete the "Energiefluss" dashboard, remove the integration and add it again.
+
 ## 0.4.0
 
 **Deutsch**

@@ -70,6 +70,8 @@ interface Options {
 interface Suggestion<T> {
   value: T;
   source: string;
+  /** Same battery seen through a second integration: shown, but not applied by "fill all". */
+  duplicate?: boolean;
 }
 
 interface Suggestions {
@@ -414,7 +416,7 @@ export class EnergieflussEditor extends LitElement {
   }
 
   private _applyBattery(b: Battery): void {
-    if (this._hasBattery(b)) return;
+    if (this._hasBattery(b) || (this._draft.batteries ?? []).length >= MAX_BATTERIES) return;
     this._draft = { ...this._draft, batteries: [...(this._draft.batteries ?? []), { ...b }] };
   }
 
@@ -435,7 +437,7 @@ export class EnergieflussEditor extends LitElement {
       const item = sg[key] as Suggestion<string> | undefined;
       if (item && !this._draft[key]) this._apply({ [key]: item.value } as Partial<Options>);
     }
-    for (const b of sg.batteries ?? []) this._applyBattery(b.value);
+    for (const b of sg.batteries ?? []) if (!b.duplicate) this._applyBattery(b.value);
   }
 
   private _addBattery(): void {

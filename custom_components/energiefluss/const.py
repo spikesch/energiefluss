@@ -99,12 +99,10 @@ CARD_FILENAME = "energiefluss-card.js"
 PANEL_FILENAME = "energiefluss-panel.js"
 PANEL_URL_PATH = "energiefluss"
 
-# Setup: card for the dashboard created after the config flow (entry.data, once)
-CONF_SETUP_CARD = "setup_card"
-CARD_GLASS = "glass"
-CARD_CLASSIC = "classic"
-CARD_NONE = "none"
-CARD_CHOICES = (CARD_GLASS, CARD_CLASSIC, CARD_NONE)
-CARD_TYPES = {CARD_GLASS: "custom:energiefluss-glass-card", CARD_CLASSIC: "custom:energiefluss-card"}
-DASHBOARD_URL = "wattrio-energiefluss"
+# Look of the card on the Wattrio page (entry.options)
+CONF_LOOK = "look"
+LOOK_GLASS = "glass"
+LOOK_CLASSIC = "classic"
+LOOKS = (LOOK_GLASS, LOOK_CLASSIC)
+FIRST_SETUP = "first_setup"  # entry.data flag: notify and put Wattrio on top once
 CARD_URL_BASE = "/energiefluss_static"

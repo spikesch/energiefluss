@@ -93,16 +93,16 @@ Die Karten registriert die Integration selbst – eine eigene Lovelace-Ressource
 Der Einrichtungsdialog führt durch alles:
 
 1. **Name** der Anlage vergeben.
-2. **Gefundene Sensoren:** Wattrio sucht selbst nach PV, Netz, Batterien, Hausverbrauch, Wallbox und Strompreis und zeigt, was es gefunden hat. Mit einem Haken übernehmen.
-3. **Look wählen:** *Glas*, *Klassik* oder *kein Dashboard*. Wattrio legt dann ein Dashboard **Energiefluss** in der Seitenleiste an, auf dem die Karte schon läuft.
+2. **Gefundene Sensoren:** Wattrio sucht selbst nach PV, Netz, Batterien, Hausverbrauch, Wallbox und Strompreis und zeigt alles als Häkchenliste mit den aktuellen Werten. Nimm den Haken weg, wo etwas nicht zu deiner Anlage gehört.
+3. **Look wählen:** *Glas* oder *Klassik*.
 
 ## Nach der Installation
 
 Eine Benachrichtigung (Glocke unten links) sagt dir, wo alles ist:
 
-- **Energiefluss** in der Seitenleiste – das neue Dashboard mit der Karte.
-- **Wattrio** in der Seitenleiste – Vorschau und Einstellungen. Hier prüfst oder änderst du die Sensoren (**Sensoren erkennen** schlägt sie erneut vor) und sortierst deine Verbraucher in **Grundlast** und **Zusatzverbraucher** ein.
-- **Karte auf einem anderen Dashboard:** Dashboard bearbeiten → *Karte hinzufügen* → nach **Wattrio** suchen → *Wattrio Energiefluss Glas* oder *Klassik*. Mehr ist nicht einzustellen.
+- **Wattrio** steht ganz oben in der Seitenleiste und zeigt den Energiefluss. Oben schaltest du zwischen **Glas** und **Klassik** um.
+- **Einstellungen** (oben rechts auf der Wattrio-Seite): Sensoren prüfen oder ändern (**Sensoren erkennen** schlägt sie erneut vor) und deine Verbraucher in **Grundlast** und **Zusatzverbraucher** einsortieren.
+- **Karte auf einem eigenen Dashboard:** Dashboard bearbeiten → *Karte hinzufügen* → nach **Wattrio** suchen → *Wattrio Energiefluss Glas* oder *Klassik*. Erscheint sie nicht in der Liste, die Seite einmal neu laden.
 - Die Integration legt nur Sensoren für das an, was eingerichtet ist. Kommt später etwas hinzu (z. B. ein Akku), entstehen dessen Sensoren beim Speichern.
 
 ## Was die Integration selbst berechnet
@@ -243,16 +243,16 @@ The cards are registered by the integration itself – there is no separate Love
 The setup dialog walks you through everything:
 
 1. Give the system a **name**.
-2. **Detected sensors:** Wattrio looks for PV, grid, batteries, house consumption, wallbox and electricity price by itself and shows what it found. Tick the box to use them.
-3. **Pick a look:** *Glas*, *Klassik* or *no dashboard*. Wattrio then creates a dashboard **Energiefluss** in the sidebar with the card already running.
+2. **Detected sensors:** Wattrio looks for PV, grid, batteries, house consumption, wallbox and electricity price by itself and shows everything as a checklist with the current values. Untick what does not belong to your system.
+3. **Pick a look:** *Glas* or *Klassik*.
 
 ## After installation
 
 A notification (bell, bottom left) tells you where everything is:
 
-- **Energiefluss** in the sidebar – the new dashboard with the card.
-- **Wattrio** in the sidebar – preview and settings. Check or change the sensors here (**Sensoren erkennen** suggests them again) and sort your loads into **Grundlast** (base load) and **Zusatzverbraucher** (additional loads).
-- **Card on another dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. Nothing else to configure.
+- **Wattrio** sits at the top of the sidebar and shows the energy flow. Switch between **Glas** and **Klassik** at the top.
+- **Einstellungen** (settings, top right on the Wattrio page): check or change the sensors (**Sensoren erkennen** suggests them again) and sort your loads into **Grundlast** (base load) and **Zusatzverbraucher** (additional loads).
+- **Card on your own dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. If it is not in the list, reload the page once.
 - The integration only creates sensors for what is set up. Add something later (e.g. a battery) and its sensors appear when you save.
 
 ## What the integration calculates itself

@@ -1,7 +1,7 @@
-"""Config flow: name, automatic sensor detection, and the card for a new dashboard.
+"""Config flow: name, the detected sensors as a checklist, and the look of the card.
 
-Made for people who never read the README: afterwards the card already works and
-a notification says where everything is.
+Made for people who never read the README: afterwards the Wattrio page (top of the
+sidebar) already shows the card, and a notification says where everything is.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ from homeassistant.config_entries import (
 )
 from homeassistant.core import callback
 from homeassistant.helpers.selector import (
-    BooleanSelector,
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -26,32 +26,33 @@ from homeassistant.helpers.selector import (
 )
 
 from .const import (
-    CARD_CHOICES,
-    CARD_GLASS,
     CONF_ENERGY_PERIOD,
-    CONF_SETUP_CARD,
+    CONF_LOOK,
     DOMAIN,
+    FIRST_SETUP,
+    LOOK_GLASS,
+    LOOKS,
+    MAX_BATTERIES,
     PANEL_URL_PATH,
     PERIOD_MIDNIGHT,
 )
-from .detect import options_from_suggestions, summary
-from .discovery import friendly_name, suggestions
+from .detect import choices, options_from_choices
+from .discovery import describe, suggestions
 from .schema import normalize_options
 
 CONF_NAME = "name"
-CONF_USE_DETECTED = "use_detected"
+CONF_USE = "use"
 
 
 class EnergieflussConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Name -> detected sensors -> card."""
+    """Name -> detected sensors (checklist) -> look."""
 
     VERSION = 1
 
     def __init__(self) -> None:
         self._title = "Wattrio"
-        self._detected: dict[str, Any] = {}
-        self._options: dict[str, Any] = {CONF_ENERGY_PERIOD: PERIOD_MIDNIGHT}
-        self._loads = 0
+        self._found: list[dict[str, Any]] = []
+        self._options: dict[str, Any] = {}
 
     def _german(self) -> bool:
         return (self.hass.config.language or "").lower().startswith("de")
@@ -66,48 +67,57 @@ class EnergieflussConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_detect(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        if user_input is not None:
-            if user_input.get(CONF_USE_DETECTED) and self._detected:
-                self._options = self._detected
-            return await self.async_step_card()
+        errors: dict[str, str] = {}
+        if user_input is None:
+            self._found = choices(suggestions(self.hass), lambda e: describe(self.hass, e), self._german())
+            if not self._found:
+                return self.async_show_form(step_id="nothing", data_schema=vol.Schema({}))
+            selected = [c["key"] for c in self._found if c["default"]]
+        else:
+            selected = list(user_input.get(CONF_USE) or [])
+            raw = options_from_choices(self._found, selected)
+            if len(raw.get("batteries") or []) > MAX_BATTERIES:
+                errors["base"] = "too_many_batteries"
+            else:
+                try:
+                    self._options = normalize_options(raw)
+                except vol.Invalid:
+                    errors["base"] = "invalid_selection"
+                else:
+                    return await self.async_step_look()
 
-        sg = suggestions(self.hass)
-        self._loads = len(sg.get("loads") or [])
-        try:
-            self._detected = normalize_options(
-                options_from_suggestions(sg) | {CONF_ENERGY_PERIOD: PERIOD_MIDNIGHT}
-            )
-        except vol.Invalid:
-            self._detected = {}
-        found = summary(sg, lambda e: friendly_name(self.hass, e), self._german())
-        if not self._detected or not found:
-            # nothing to confirm: say so and go on with the card
-            return self.async_show_form(step_id="nothing", data_schema=vol.Schema({}))
         return self.async_show_form(
             step_id="detect",
-            data_schema=vol.Schema({vol.Required(CONF_USE_DETECTED, default=True): BooleanSelector()}),
-            description_placeholders={"found": found, "loads": str(self._loads)},
+            data_schema=vol.Schema(
+                {
+                    vol.Optional(CONF_USE, default=selected): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[SelectOptionDict(value=c["key"], label=c["label"]) for c in self._found],
+                            multiple=True,
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+            errors=errors,
+            description_placeholders={"max": str(MAX_BATTERIES)},
         )
 
     async def async_step_nothing(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        return await self.async_step_card()
+        self._options = normalize_options({})
+        return await self.async_step_look()
 
-    async def async_step_card(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_look(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
-            return self.async_create_entry(
-                title=self._title,
-                data={CONF_SETUP_CARD: user_input[CONF_SETUP_CARD], "detected_loads": self._loads},
-                options=self._options,
-            )
+            options = {**self._options, CONF_LOOK: user_input[CONF_LOOK], CONF_ENERGY_PERIOD: PERIOD_MIDNIGHT}
+            return self.async_create_entry(title=self._title, data={FIRST_SETUP: True}, options=options)
         return self.async_show_form(
-            step_id="card",
+            step_id="look",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_SETUP_CARD, default=CARD_GLASS): SelectSelector(
+                    vol.Required(CONF_LOOK, default=LOOK_GLASS): SelectSelector(
                         SelectSelectorConfig(
-                            options=list(CARD_CHOICES),
-                            mode=SelectSelectorMode.LIST,
-                            translation_key=CONF_SETUP_CARD,
+                            options=list(LOOKS), mode=SelectSelectorMode.LIST, translation_key=CONF_LOOK
                         )
                     )
                 }

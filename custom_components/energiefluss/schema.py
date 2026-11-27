@@ -9,6 +9,9 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 
 from .const import (
+    CONF_LOOK,
+    LOOK_GLASS,
+    LOOKS,
     CONF_BACKUP_LOADS,
     CONF_BATTERIES,
     CONF_BATTERY_CAPACITY,
@@ -98,6 +101,7 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_WALLBOX_SOC): _ENTITY,
         vol.Optional(CONF_WALLBOX_FLEXIBLE, default=True): cv.boolean,
         vol.Optional(CONF_ENERGY_PERIOD, default=PERIOD_MIDNIGHT): vol.In([PERIOD_MIDNIGHT, PERIOD_ROLLING]),
+        vol.Optional(CONF_LOOK, default=LOOK_GLASS): vol.In(LOOKS),
     },
     extra=vol.REMOVE_EXTRA,
 )
@@ -142,4 +146,5 @@ def normalize_options(raw: dict[str, Any]) -> dict[str, Any]:
         CONF_GRID_MODE: data[CONF_GRID_MODE],
         CONF_WALLBOX_FLEXIBLE: data[CONF_WALLBOX_FLEXIBLE],
         CONF_ENERGY_PERIOD: data[CONF_ENERGY_PERIOD],
+        CONF_LOOK: data[CONF_LOOK],
     }

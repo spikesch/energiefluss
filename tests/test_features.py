@@ -19,9 +19,10 @@ for name in ("const", "features"):
 features = sys.modules["ef_pkg.features"]
 
 
-def test_empty_config_only_house():
-    assert features.wanted_power_sensors({}) == {"home_power"}
-    assert features.wanted_totals({}) == {"home"}
+def test_empty_config_no_sensors():
+    assert features.wanted_power_sensors({}) == set()
+    assert features.wanted_totals({}) == set()
+    assert features.wanted_power_sensors({"home_power": "sensor.h"}) == {"home_power"}
 
 
 def test_solar_grid_battery_without_loads():

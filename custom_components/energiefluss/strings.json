@@ -10,22 +10,26 @@
       },
       "detect": {
         "title": "Found these sensors",
-        "description": "Wattrio found these sensors in your Home Assistant:\n\n{found}\n\nUse them? You can check and change everything later in the sidebar under **Wattrio**.",
+        "description": "Wattrio found these sensors in your Home Assistant, with their current values. Untick what does not belong to your system. You can change everything later on the Wattrio page under **Einstellungen**.",
         "data": {
-          "use_detected": "Use the detected sensors"
+          "use": "Use"
         }
       },
       "nothing": {
         "title": "No matching sensors found",
-        "description": "Wattrio found no solar, grid or battery sensors it recognises. No problem: after the setup assign them in the sidebar under **Wattrio** – a short list to click through."
+        "description": "Wattrio found no solar, grid or battery sensors it recognises. No problem: after the setup open **Wattrio** at the top of the sidebar → **Einstellungen** and pick them from a short list."
       },
-      "card": {
+      "look": {
         "title": "Which look?",
-        "description": "Wattrio creates a new dashboard **Energiefluss** in the sidebar with this card. You can also add both cards to any dashboard yourself later.",
+        "description": "The card appears straight away on the **Wattrio** page at the top of the sidebar. You can switch the look there at any time.",
         "data": {
-          "setup_card": "Card"
+          "look": "Look"
         }
       }
+    },
+    "error": {
+      "too_many_batteries": "At most {max} batteries – please untick some.",
+      "invalid_selection": "This combination does not fit together – please untick one of the batteries."
     },
     "abort": {}
   },
@@ -138,11 +142,10 @@
     }
   },
   "selector": {
-    "setup_card": {
+    "look": {
       "options": {
         "glass": "Glas – 2.5D glass look with glass pipes and glowing balls",
-        "classic": "Klassik – flat, plain look",
-        "none": "No dashboard – I add the card myself"
+        "classic": "Klassik – flat and plain"
       }
     }
   }

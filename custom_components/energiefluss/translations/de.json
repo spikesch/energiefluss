@@ -10,22 +10,26 @@
       },
       "detect": {
         "title": "Diese Sensoren wurden gefunden",
-        "description": "Wattrio hat in deinem Home Assistant diese Sensoren gefunden:\n\n{found}\n\nÜbernehmen? Prüfen und ändern kannst du alles später in der Seitenleiste unter **Wattrio**.",
+        "description": "Wattrio hat diese Sensoren in deinem Home Assistant gefunden, mit ihren aktuellen Werten. Nimm den Haken weg, wo etwas nicht zu deiner Anlage gehört. Ändern kannst du alles später auf der Wattrio-Seite unter **Einstellungen**.",
         "data": {
-          "use_detected": "Gefundene Sensoren übernehmen"
+          "use": "Übernehmen"
         }
       },
       "nothing": {
         "title": "Keine passenden Sensoren gefunden",
-        "description": "Wattrio hat keine PV-, Netz- oder Batterie-Sensoren erkannt. Kein Problem: Ordne sie nach der Einrichtung in der Seitenleiste unter **Wattrio** zu – eine kurze Liste zum Anklicken."
+        "description": "Wattrio hat keine PV-, Netz- oder Batterie-Sensoren erkannt. Kein Problem: Öffne nach der Einrichtung **Wattrio** ganz oben in der Seitenleiste → **Einstellungen** und wähle sie aus einer kurzen Liste."
       },
-      "card": {
+      "look": {
         "title": "Welcher Look?",
-        "description": "Wattrio legt ein neues Dashboard **Energiefluss** in der Seitenleiste mit dieser Karte an. Beide Karten kannst du später auch selbst auf jedes Dashboard setzen.",
+        "description": "Die Karte erscheint sofort auf der Seite **Wattrio** ganz oben in der Seitenleiste. Den Look kannst du dort jederzeit umschalten.",
         "data": {
-          "setup_card": "Karte"
+          "look": "Look"
         }
       }
+    },
+    "error": {
+      "too_many_batteries": "Höchstens {max} Batterien – bitte bei einigen den Haken wegnehmen.",
+      "invalid_selection": "Diese Auswahl passt nicht zusammen – bitte bei einer der Batterien den Haken wegnehmen."
     },
     "abort": {}
   },
@@ -138,11 +142,10 @@
     }
   },
   "selector": {
-    "setup_card": {
+    "look": {
       "options": {
         "glass": "Glas – 2.5D-Glas-Look mit Glasrohren und leuchtenden Kugeln",
-        "classic": "Klassik – flach und schlicht",
-        "none": "Kein Dashboard – ich setze die Karte selbst"
+        "classic": "Klassik – flach und schlicht"
       }
     }
   }

@@ -90,12 +90,8 @@ def test_generic_names():
         "discharge_power": "sensor.speicher_4_entladen",
         "soc": "sensor.speicher_4_soc",
     }
-    # "in_out" is one signed sensor, not a split pair
-    assert bats["Hyper 2000 Batterie"] == {
-        "name": "Hyper 2000 Batterie",
-        "mode": "combined",
-        "power": "sensor.hyper_2000_bat_in_out",
-    }
+    # a lone power value without state of charge is no battery suggestion (helpers, managers)
+    assert "Hyper 2000 Batterie" not in bats
 
     loads = [l["entity"] for l in out["loads"]]
     assert loads == ["sensor.kuhlschrank", "sensor.waschmaschine"]
@@ -128,6 +124,74 @@ def test_options_from_suggestions_and_summary():
     opts = detect.options_from_suggestions(sg)
     assert "sensor.pv1" in opts["solar_strings"]
     assert opts["batteries"] and "loads" not in opts
-    text = detect.summary(sg, lambda e: e.upper())
-    assert "SENSOR.PV1" in text and text.startswith("- ")
-    assert detect.summary({}, str) == ""
+    found = detect.choices(sg, lambda e: e.upper())
+    assert any("SENSOR.PV1" in c["label"] for c in found)
+    picked = detect.options_from_choices(found, [c["key"] for c in found if c["default"]])
+    assert picked["solar_strings"] == opts["solar_strings"] and picked["batteries"] == opts["batteries"]
+    assert detect.options_from_choices(found, []) == {}
+    assert detect.choices({}, str) == []
+
+
+def _crowded():
+    """A big real-world install: several integrations see the same devices, many helpers."""
+
+    def d(eid, name, dev, devname, unit="W", dc="power", state="1"):
+        return S(eid, name, "x", dev, devname, unit, dc, state)
+
+    def h(eid, name, unit="W", dc="power", state="1"):
+        return S(eid, name, "template", None, None, unit, dc, state)
+
+    return [
+        d("sensor.power_1", "Inverter 7.1 Leistung", "inv", "Inverter 7.1", state="214"),
+        d("sensor.max_active_power_1", "Inverter 7.1 Max. Wirkleistung", "inv", "Inverter 7.1", state="9"),
+        d("sensor.power_1_0", "String 7.1.0 Leistung", "str", "String 7.1.0", state="214"),
+        d("sensor.dpu_solar_1_in_power", "DELTA Pro Ultra Solar (1) In Power", "eco", "DELTA Pro Ultra", state="0"),
+        d("sensor.dpu_solar_2_in_power", "DELTA Pro Ultra Solar (2) In Power", "eco", "DELTA Pro Ultra", state="0"),
+        d("sensor.dpu_solar_in_power", "DELTA Pro Ultra Solar In Power", "eco", "DELTA Pro Ultra", state="unavailable"),
+        d("sensor.dach_netzleistung", "solaredge Netzleistung", "se", "Dach", state="unavailable"),
+        d("sensor.dach_verbraucher", "solaredge Verbraucherleistung", "se", "Dach", state="12"),
+        d("sensor.dpu_battery_power", "DELTA Pro Ultra Battery Power", "eco", "DELTA Pro Ultra", state="185"),
+        d("sensor.dpu_soc", "DELTA Pro Ultra Battery level SOC", "eco", "DELTA Pro Ultra", "%", "battery", "42"),
+        d("sensor.hyper_charge", "Hyper 2000 Batterieladeleistung", "hy", "Hyper 2000", state="0"),
+        d("sensor.hyper_discharge", "Hyper 2000 Batterieentladeleistung", "hy", "Hyper 2000", state="490"),
+        d("sensor.hyper_soc", "Hyper 2000 Batterieladezustand (SoC)", "hy", "Hyper 2000", "%", "battery", "20"),
+        d("sensor.senec_web_power", "SENEC WebAPI Battery Power", "sw", "SENEC WebAPI", state="11"),
+        d("sensor.senec_web_soc", "Akku-Füllstand in Prozent", "sw", "SENEC WebAPI", "%", "battery", "70"),
+        d("sensor.senec_pv", "Aktuell erzeugter PV-Strom", "sm", "SENEC Main-Unit", state="96"),
+        d("sensor.senec_charge", "Akku Ladeleistung", "sm", "SENEC Main-Unit", state="0"),
+        d("sensor.senec_discharge", "Akku Entladeleistung", "sm", "SENEC Main-Unit", state="0"),
+        d("sensor.senec_soc", "Akku-Füllstand in Prozent", "sm", "SENEC Main-Unit", "%", "battery", "70"),
+        d("sensor.zm_power", "Zendure Manager Leistung", "zm", "Zendure Manager", state="489"),
+        d("sensor.sbm_surplus", "Smart Battery Manager Solar-Überschuss", "sbm", "Smart Battery Manager", state="0"),
+        d("sensor.sbm_soc", "Smart Battery Manager Gesamt-SOC", "sbm", "Smart Battery Manager", "%", "battery", "43"),
+        h("sensor.senec_standby_w", "Senec Standby-Verbrauch", state="5"),
+        h("sensor.batterie_eingang_gesamt", "Batterie Eingang Gesamt", state="0"),
+        h("sensor.pv_zu_akku_heute", "Energie heute – PV zu Akku", "kWh", "energy", "0.2"),
+    ]
+
+
+def test_crowded_install_stays_sensible():
+    out = detect.suggest(_crowded())
+    # strings instead of their inverter total; no grid, consumption, limits or dead sensors
+    assert out["solar_strings"]["value"] == [
+        "sensor.power_1_0",
+        "sensor.dpu_solar_1_in_power",
+        "sensor.dpu_solar_2_in_power",
+    ]
+    assert "solar_today" not in out  # "PV zu Akku" is no PV yield
+    bats = out["batteries"]
+    names = [b["value"]["name"] for b in bats]
+    assert names == ["DELTA Pro Ultra", "Hyper 2000", "SENEC WebAPI", "SENEC Main-Unit"]
+    assert bats[1]["value"]["mode"] == "split"
+    assert "sensor.senec_pv" not in str(bats)  # PV power of a battery device
+    # second view of the same Senec (same state of charge) is marked, not applied
+    assert bats[3].get("duplicate") and not bats[2].get("duplicate")
+    opts = detect.options_from_suggestions(out)
+    assert [b["name"] for b in opts["batteries"]] == ["DELTA Pro Ultra", "Hyper 2000", "SENEC WebAPI"]
+
+
+def test_crowded_choices_tick_no_duplicates():
+    found = detect.choices(detect.suggest(_crowded()), str)
+    bats = [c for c in found if c["key"].startswith("battery_")]
+    assert [c["default"] for c in bats] == [True, True, True, False]
+    assert "vermutlich" in bats[3]["label"]

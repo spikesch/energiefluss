@@ -26,6 +26,7 @@ def sensor_infos(hass: HomeAssistant) -> list[SensorInfo]:
                 device_name=(device.name_by_user or device.name) if device else None,
                 unit=state.attributes.get("unit_of_measurement"),
                 device_class=state.attributes.get("device_class"),
+                state=state.state,
             )
         )
     return sensors
@@ -35,6 +36,16 @@ def suggestions(hass: HomeAssistant) -> dict[str, Any]:
     return suggest(sensor_infos(hass))
 
 
-def friendly_name(hass: HomeAssistant, entity_id: str) -> str:
+def describe(hass: HomeAssistant, entity_id: str) -> str:
+    """'Name (value unit)' so the user recognises the sensor."""
     state = hass.states.get(entity_id)
-    return state.name if state and state.name else entity_id
+    if state is None:
+        return entity_id
+    value = state.state
+    try:
+        number = float(value)
+        value = f"{number:.0f}" if abs(number) >= 10 else f"{number:.2g}"
+    except ValueError:
+        pass
+    unit = state.attributes.get("unit_of_measurement") or ""
+    return f"{state.name} ({value} {unit})".replace(" )", ")")

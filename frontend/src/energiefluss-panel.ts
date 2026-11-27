@@ -1,14 +1,39 @@
-// Sidebar page "Wattrio": live preview of the card next to the shared
-// editor (<energiefluss-editor>) for one instance.
+// Sidebar page "Wattrio" (top of the sidebar after setup): shows the energy flow
+// card in the chosen look; "Einstellungen" opens the shared editor
+// (<energiefluss-editor>) next to a live preview.
+//
+// The page imports the cards itself: Home Assistant loads a panel's module when
+// it is opened, so the card works right after the setup without reloading the
+// browser (the extra_js_url of the integration only arrives with a reload).
 
 import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { type Hass, type Instance } from "./editor-core";
 import "./editor-core";
+import "./cards";
 
 interface CardElement extends HTMLElement {
   hass?: Hass;
   setConfig(config: Record<string, unknown>): void;
+}
+
+type Look = "glass" | "classic";
+type View = "card" | "settings";
+
+interface EntryOptions {
+  title: string;
+  options: Record<string, unknown>;
+}
+
+const TAGS: Record<Look, string> = { glass: "energiefluss-glass-card", classic: "energiefluss-card" };
+
+/** Something assigned that the card can show. */
+function configured(o: Record<string, unknown>): boolean {
+  const filled = (k: string) => {
+    const v = o[k];
+    return Array.isArray(v) ? v.length > 0 : !!v;
+  };
+  return ["solar_strings", "grid_power", "grid_import_power", "grid_export_power", "batteries", "home_power"].some(filled);
 }
 
 export class EnergieflussPanel extends LitElement {
@@ -18,46 +43,102 @@ export class EnergieflussPanel extends LitElement {
   @state() private _instances: Instance[] = [];
   @state() private _entryId?: string;
   @state() private _loaded = false;
+  @state() private _look: Look = "glass";
+  @state() private _view: View = "card";
+  @state() private _saving = false;
+  private _options: Record<string, unknown> = {};
   private _card?: CardElement;
-  private _cardFor?: string;
+  private _host?: Element;
+  private _cardKey?: string;
 
   protected async firstUpdated(): Promise<void> {
     if (!this.hass) return;
     this._instances = await this.hass.callWS<Instance[]>({ type: "energiefluss/instances" });
     const wanted = new URLSearchParams(location.search).get("entry");
-    this._entryId = (this._instances.find((i) => i.entry_id === wanted) ?? this._instances[0])?.entry_id;
+    const id = (this._instances.find((i) => i.entry_id === wanted) ?? this._instances[0])?.entry_id;
+    if (id) await this._select(id, true);
     this._loaded = true;
   }
 
+  private async _select(entryId: string, chooseView: boolean): Promise<void> {
+    const res = await this.hass!.callWS<EntryOptions>({ type: "energiefluss/get_options", entry_id: entryId });
+    this._options = res.options ?? {};
+    this._look = this._options.look === "classic" ? "classic" : "glass";
+    if (chooseView) this._view = configured(this._options) ? "card" : "settings";
+    this._entryId = entryId;
+  }
+
+  private async _setLook(look: Look): Promise<void> {
+    if (!this.hass || !this._entryId || look === this._look || this._saving) return;
+    this._look = look; // show it at once; the instance reloads in the background
+    this._saving = true;
+    try {
+      await this.hass.callWS({ type: "energiefluss/set_look", entry_id: this._entryId, look });
+      this._options = { ...this._options, look };
+    } finally {
+      this._saving = false;
+    }
+  }
+
+  private async _toggleView(): Promise<void> {
+    if (this._view === "settings" && this._entryId) {
+      // the editor may have saved: take its options (and the look) back
+      await this._select(this._entryId, false);
+      this._view = "card";
+    } else {
+      this._view = "settings";
+    }
+  }
+
   protected updated(changed: PropertyValues): void {
-    const host = this.renderRoot.querySelector("#preview");
-    if (host && this._entryId && this._cardFor !== this._entryId) {
-      this._cardFor = this._entryId;
-      void this._mountCard(host, this._entryId);
+    const host = this.renderRoot.querySelector("#card");
+    const key = `${this._entryId}|${this._look}`;
+    if (host && this._entryId && (host !== this._host || key !== this._cardKey)) {
+      this._host = host;
+      this._cardKey = key;
+      void this._mountCard(host, this._entryId, this._look);
     } else if (changed.has("hass") && this._card) {
       this._card.hass = this.hass;
     }
   }
 
-  private async _mountCard(host: Element, entryId: string): Promise<void> {
-    await customElements.whenDefined("energiefluss-card");
-    const card = document.createElement("energiefluss-card") as CardElement;
-    card.setConfig({ type: "custom:energiefluss-card", entry_id: entryId });
+  private async _mountCard(host: Element, entryId: string, look: Look): Promise<void> {
+    const tag = TAGS[look];
+    await customElements.whenDefined(tag);
+    const card = document.createElement(tag) as CardElement;
+    card.setConfig({ type: `custom:${tag}`, entry_id: entryId });
     card.hass = this.hass;
     host.replaceChildren(card);
     this._card = card;
   }
 
   protected render() {
+    const settings = this._view === "settings";
     const toolbar = html`<div class="toolbar ${this.narrow ? "narrow" : ""}">
       <ha-menu-button .hass=${this.hass} .narrow=${this.narrow}></ha-menu-button>
       <div class="title">Wattrio</div>
       ${this._instances.length > 1
-        ? html`<select @change=${(e: Event) => (this._entryId = (e.target as HTMLSelectElement).value)}>
+        ? html`<select @change=${(e: Event) => void this._select((e.target as HTMLSelectElement).value, true)}>
             ${this._instances.map(
               (i) => html`<option value=${i.entry_id} ?selected=${i.entry_id === this._entryId}>${i.title}</option>`,
             )}
           </select>`
+        : nothing}
+      ${this._entryId
+        ? html`<div class="looks" role="group" aria-label="Look">
+              ${(["glass", "classic"] as Look[]).map(
+                (l) => html`<button
+                  class=${this._look === l ? "on" : ""}
+                  ?disabled=${this._saving}
+                  @click=${() => void this._setLook(l)}
+                >
+                  ${l === "glass" ? "Glas" : "Klassik"}
+                </button>`,
+              )}
+            </div>
+            <button class="settings" @click=${() => void this._toggleView()}>
+              ${settings ? "Fertig" : "Einstellungen"}
+            </button>`
         : nothing}
     </div>`;
 
@@ -68,10 +149,14 @@ export class EnergieflussPanel extends LitElement {
         „Wattrio“ eine Anlage anlegen.
       </div>`;
     }
+    if (!settings) {
+      return html`${toolbar}
+        <div class="view"><div id="card"></div></div>`;
+    }
     return html`
       ${toolbar}
       <div class="content ${this.narrow ? "narrow" : ""}">
-        <div class="preview-col"><div id="preview"></div></div>
+        <div class="preview-col"><div id="card"></div></div>
         <energiefluss-editor .hass=${this.hass} .entryId=${this._entryId}></energiefluss-editor>
       </div>
     `;
@@ -108,12 +193,53 @@ export class EnergieflussPanel extends LitElement {
     }
     .toolbar.narrow {
       padding: 0 4px;
+      gap: 4px;
     }
     select {
       font: inherit;
       padding: 4px 8px;
       border-radius: 6px;
       max-width: 160px;
+    }
+    button {
+      font: inherit;
+      font-size: 14px;
+      color: inherit;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 16px;
+      padding: 5px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+    .looks {
+      display: flex;
+    }
+    .looks button {
+      border-radius: 0;
+    }
+    .looks button:first-child {
+      border-radius: 16px 0 0 16px;
+    }
+    .looks button:last-child {
+      border-radius: 0 16px 16px 0;
+      border-left: none;
+    }
+    .looks button.on {
+      background: rgba(255, 255, 255, 0.22);
+      font-weight: 600;
+    }
+    .settings {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .view {
+      padding: 16px;
+      max-width: 1500px;
+      margin: 0 auto;
     }
     .content {
       display: grid;

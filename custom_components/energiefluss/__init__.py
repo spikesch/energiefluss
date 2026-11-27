@@ -20,8 +20,10 @@ from homeassistant.helpers import (
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
-    CARD_NONE,
-    CONF_SETUP_CARD,
+    CONF_LOOK,
+    FIRST_SETUP,
+    LOOK_GLASS,
+    LOOKS,
     CARD_FILENAME,
     CARD_URL_BASE,
     PANEL_FILENAME,
@@ -52,7 +54,8 @@ from .const import (
     load_today_unique_id,
 )
 from .discovery import suggestions
-from .setup_dashboard import async_create_dashboard, notify
+from .features import wanted_power_sensors
+from .first_setup import async_sidebar_on_top, notify
 from .hub import EnergieflussHub
 from .schema import normalize_options
 
@@ -83,7 +86,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             embed_iframe=False,
         )
 
-    for command in (ws_get_config, ws_list_instances, ws_get_options, ws_save_options, ws_suggest):
+    for command in (ws_get_config, ws_list_instances, ws_get_options, ws_save_options, ws_set_look, ws_suggest):
         websocket_api.async_register_command(hass, command)
     return True
 
@@ -95,22 +98,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnergieflussConfigEntry)
     entry.runtime_data = hub
     hub.async_start()
     entry.async_on_unload(hub.async_stop)
-    # first start after the config flow: take the one-time setup choice out of the
-    # entry before the reload listener exists (no reload loop)
-    card = entry.data.get(CONF_SETUP_CARD)
-    loads = int(entry.data.get("detected_loads") or 0)
-    if card is not None:
+    # first start after the setup dialog: take the one-time flag out of the entry
+    # before the reload listener exists (no reload loop)
+    first = bool(entry.data.get(FIRST_SETUP))
+    if first:
         hass.config_entries.async_update_entry(entry, data={})
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    if card is not None:
-        hass.async_create_task(_async_first_setup(hass, entry, card, loads))
+    if first:
+        await async_sidebar_on_top(hass)
+        notify(hass, entry, configured=bool(wanted_power_sensors(hub.config)))
     return True
-
-
-async def _async_first_setup(hass: HomeAssistant, entry: EnergieflussConfigEntry, card: str, loads: int) -> None:
-    url = await async_create_dashboard(hass, entry, card) if card != CARD_NONE else None
-    notify(hass, entry, card, url, loads)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: EnergieflussConfigEntry) -> bool:
@@ -313,13 +311,33 @@ def ws_save_options(
         connection.send_error(msg["id"], "not_found", "Instanz nicht gefunden")
         return
     try:
-        options = normalize_options(msg["options"])
+        # the look belongs to the Wattrio page (set_look), the editor may send an old one
+        options = normalize_options({**msg["options"], CONF_LOOK: entry.options.get(CONF_LOOK, LOOK_GLASS)})
     except vol.Invalid as err:
         connection.send_error(msg["id"], "invalid", f"Ungültige Eingabe: {err}")
         return
     title = msg["title"].strip() or entry.title
     hass.config_entries.async_update_entry(entry, title=title, options=options)
     connection.send_result(msg["id"], {"title": title, "options": options})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): f"{DOMAIN}/set_look",
+        vol.Required("entry_id"): str,
+        vol.Required("look"): vol.In(LOOKS),
+    }
+)
+@callback
+def ws_set_look(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Glas or Klassik on the Wattrio page."""
+    if (entry := _entry(hass, msg["entry_id"])) is None:
+        connection.send_error(msg["id"], "not_found", "Instanz nicht gefunden")
+        return
+    hass.config_entries.async_update_entry(entry, options={**entry.options, CONF_LOOK: msg["look"]})
+    connection.send_result(msg["id"], {"look": msg["look"]})
 
 
 @websocket_api.websocket_command({vol.Required("type"): f"{DOMAIN}/suggest"})

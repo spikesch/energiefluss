@@ -37,6 +37,19 @@ KW_HOME = r"\b(haus|house|home|hausverbrauch|gesamtverbrauch|load|consumption)\b
 KW_PRICE = r"preis|price|tarif"
 KW_FORECAST = r"remaining|verbleib\w*|rest\b|forecast|prognose"
 KW_TODAY = r"heute|today|daily|tages\w*|accumulated"
+# not a PV generator although the name says PV/solar (grid, consumption, limits, ...)
+KW_NOT_SOLAR = (
+    r"netz\w*|grid|verbrauch\w*|consumption|load|max\w*|limit\w*|grenz\w*|soll|target|setpoint|"
+    r"überschuss|ueberschuss|surplus|export|einspeis\w*|zu akku|to battery|akku|batter\w*"
+)
+KW_STRING = r"string|mppt|solar\s?\d|\bdc\s?\d|\(\d\)|\bpv\s?\d"
+# helpers that mention a battery but are no battery power
+KW_NOT_BATTERY = (
+    r"standby|eigenverbrauch|verbrauch\w*|hauslast|house|home|überschuss|ueberschuss|surplus|max\w*|limit\w*|"
+    r"soll|target|setpoint|ziel\w*|gesamt|total"
+)
+MAX_SOLAR = 8
+MAX_BATTERIES = 5  # same limit as the editor
 
 
 @dataclass
@@ -50,6 +63,11 @@ class SensorInfo:
     device_name: str | None = None
     unit: str | None = None
     device_class: str | None = None
+    state: str | None = None  # None: unknown to the caller (tests), counts as alive
+
+    @property
+    def alive(self) -> bool:
+        return self.state not in ("unavailable", "unknown")
 
     @property
     def text(self) -> str:
@@ -88,13 +106,22 @@ def _base(s: SensorInfo) -> str:
     return "name:" + " ".join(words.split())
 
 
+def _number(state: str | None) -> float | None:
+    try:
+        return float(state) if state is not None else None
+    except ValueError:
+        return None
+
+
 def _suggestion(value: Any, source: str) -> dict[str, Any]:
     return {"value": value, "source": source}
 
 
 def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
     """Return suggestions per editor field (only what was found)."""
-    sensors = [s for s in sensors if s.platform not in IGNORED_PLATFORMS]
+    sensors = [s for s in sensors if s.platform not in IGNORED_PLATFORMS and s.alive]
+    # sensors of real devices before helpers (template, group, ...) of the same kind
+    sensors.sort(key=lambda s: s.device_id is None)
     used: set[str] = set()
     out: dict[str, Any] = {}
 
@@ -139,10 +166,18 @@ def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
     solar = [
         s
         for s in power
-        if s.entity_id not in used and s.has(KW_SOLAR) and not s.has(KW_BATTERY) and not s.has(KW_FORECAST)
+        if s.entity_id not in used
+        and s.has(KW_SOLAR)
+        and not s.has(KW_BATTERY)
+        and not s.has(KW_FORECAST)
+        and not s.name_has(KW_NOT_SOLAR)
     ]
+    # a total next to its own strings counts the same power twice: keep the strings
+    strings = [s for s in solar if s.has(KW_STRING)]
+    if strings:
+        solar = strings
     if solar:
-        out["solar_strings"] = _suggestion([s.entity_id for s in solar], "Name")
+        out["solar_strings"] = _suggestion([s.entity_id for s in solar[:MAX_SOLAR]], "Name")
         used.update(s.entity_id for s in solar)
     forecast = [
         s
@@ -154,14 +189,25 @@ def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
     if forecast:
         src = "Solcast" if forecast[0].platform == "solcast_solar" else "Name"
         out["solar_forecast_remaining"] = _suggestion(forecast[0].entity_id, src)
-    solar_today = [s for s in energy if s.has(KW_SOLAR) and s.has(KW_TODAY) and not s.has(KW_FORECAST)]
+    solar_today = [
+        s
+        for s in energy
+        if s.has(KW_SOLAR) and s.has(KW_TODAY) and not s.has(KW_FORECAST) and not s.name_has(KW_NOT_SOLAR)
+    ]
     if solar_today:
         out["solar_today"] = _suggestion(solar_today[0].entity_id, "Name")
 
     # -- batteries (grouped per device or per name without the quantity) ------------
     groups: dict[str, dict[str, SensorInfo]] = defaultdict(dict)
     for s in power:
-        if s.entity_id in used or not s.has(KW_BATTERY) or s.has(KW_CAR) or s.has(KW_WALLBOX):
+        if (
+            s.entity_id in used
+            or not s.has(KW_BATTERY)
+            or s.has(KW_CAR)
+            or s.has(KW_WALLBOX)
+            or s.name_has(KW_SOLAR)
+            or s.name_has(KW_NOT_BATTERY)
+        ):
             continue
         c, d = s.name_has(KW_CHARGE), s.name_has(KW_DISCHARGE)
         kind = "power" if c == d else "charge" if c else "discharge"
@@ -175,8 +221,15 @@ def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
         and (s.has(KW_BATTERY) or s.has(KW_SOC))
     ]
     batteries = []
+    used_socs: set[str] = set()
+    soc_levels: set[float | None] = set()
     for base, parts in groups.items():
-        soc = next((s for s in socs if _base(s) == base), None)
+        soc = next((s for s in socs if _base(s) == base and s.entity_id not in used_socs), None)
+        split = "charge" in parts and "discharge" in parts
+        if soc is None and not split:
+            continue  # a lone power value is rarely a battery (helpers, managers, ...)
+        if base.startswith("name:") and any(b["source"] == "Gerät" for b in batteries):
+            continue  # helpers only when no battery device was found
         first = next(iter(parts.values()))
         cleaned = re.sub(
             rf"\(.*?\)|{KW_DISCHARGE}|{KW_CHARGE}|leistung|power", " ", first.name, flags=re.IGNORECASE
@@ -192,10 +245,17 @@ def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
         else:
             bat["mode"] = "combined"
             bat["power"] = parts["power"].entity_id
+        item = _suggestion(bat, "Gerät" if base.startswith("dev:") else "Name")
         if soc:
             bat["soc"] = soc.entity_id
+            used_socs.add(soc.entity_id)
+            level = _number(soc.state)
+            # the same battery seen through a second integration (cloud + local, proxy, ...)
+            if level is not None and 0 < level < 100 and level in soc_levels:
+                item["duplicate"] = True
+            soc_levels.add(level)
         used.update(s.entity_id for s in parts.values())
-        batteries.append(_suggestion(bat, "Gerät" if base.startswith("dev:") else "Name"))
+        batteries.append(item)
     if batteries:
         out["batteries"] = batteries
 
@@ -251,38 +311,66 @@ def options_from_suggestions(sg: dict[str, Any]) -> dict[str, Any]:
     for key in SCALAR_KEYS:
         if sg.get(key):
             opts[key] = sg[key]["value"]
-    batteries = [dict(b["value"]) for b in sg.get("batteries") or []]
+    batteries = [dict(b["value"]) for b in sg.get("batteries") or [] if not b.get("duplicate")][:MAX_BATTERIES]
     if batteries:
         opts["batteries"] = batteries
     return opts
 
 
-def summary(sg: dict[str, Any], name: Callable[[str], str], german: bool = True) -> str:
-    """Markdown list of what was found, for the setup dialog."""
+def choices(sg: dict[str, Any], describe: Callable[[str], str], german: bool = True) -> list[dict[str, Any]]:
+    """Every found item as a checkbox for the setup dialog.
 
-    def names(ids: list[str]) -> str:
-        return ", ".join(name(e) for e in ids if e)
-
+    Each choice: key, label, whether it is ticked by default, and the options it adds.
+    ``describe`` turns an entity id into "Name (value unit)".
+    """
     t = (lambda de, en: de) if german else (lambda de, en: en)
-    lines: list[str] = []
-    if strings := (sg.get("solar_strings") or {}).get("value"):
-        label = t("PV", "PV") if len(strings) == 1 else t(f"PV ({len(strings)} Stränge)", f"PV ({len(strings)} strings)")
-        lines.append(f"☀️ **{label}:** {names(strings)}")
+    out: list[dict[str, Any]] = []
+    for i, e in enumerate((sg.get("solar_strings") or {}).get("value") or []):
+        out.append({"key": f"solar_{i}", "label": f"☀️ PV: {describe(e)}", "default": True, "add": {"solar_strings": [e]}})
     if grid := (sg.get("grid") or {}).get("value"):
-        ids = [grid.get("grid_power"), grid.get("grid_import_power"), grid.get("grid_export_power")]
-        lines.append(f"🔌 **{t('Netz', 'Grid')}:** {names([i for i in ids if i])}")
-    for bat in sg.get("batteries") or []:
+        ids = [grid.get(k) for k in ("grid_power", "grid_import_power", "grid_export_power")]
+        text = " / ".join(describe(i) for i in ids if i)
+        out.append({"key": "grid", "label": f"🔌 {t('Netz', 'Grid')}: {text}", "default": True, "add": dict(grid)})
+    picked = 0
+    for i, bat in enumerate(sg.get("batteries") or []):
         b = bat["value"]
-        ids = [b.get("power"), b.get("charge_power"), b.get("discharge_power"), b.get("soc")]
-        lines.append(f"🔋 **{t('Batterie', 'Battery')} {b.get('name', '')}:** {names([i for i in ids if i])}")
+        ids = [b.get(k) for k in ("power", "charge_power", "discharge_power", "soc")]
+        text = ", ".join(describe(x) for x in ids if x)
+        default = not bat.get("duplicate") and picked < MAX_BATTERIES
+        picked += default
+        note = t(" – vermutlich dieselbe Batterie wie oben", " – probably the same battery as above") if bat.get("duplicate") else ""
+        out.append(
+            {
+                "key": f"battery_{i}",
+                "label": f"🔋 {b.get('name', t('Batterie', 'Battery'))}: {text}{note}",
+                "default": default,
+                "add": {"batteries": [dict(b)]},
+            }
+        )
     for key, icon, de, en in (
         ("home_power", "🏠", "Hausverbrauch", "House consumption"),
         ("wallbox_power", "🚗", "Wallbox", "Wallbox"),
         ("wallbox_soc", "🚗", "Ladestand Auto", "Car state of charge"),
         ("grid_price", "💶", "Strompreis", "Electricity price"),
         ("solar_today", "☀️", "PV-Ertrag heute", "PV yield today"),
-        ("solar_forecast_remaining", "☀️", "PV-Prognose", "PV forecast"),
+        ("solar_forecast_remaining", "☀️", "PV-Prognose Rest heute", "PV forecast rest of today"),
+        ("grid_import_today", "🔌", "Netzbezug heute", "Grid import today"),
+        ("grid_export_today", "🔌", "Einspeisung heute", "Grid export today"),
     ):
         if item := sg.get(key):
-            lines.append(f"{icon} **{t(de, en)}:** {name(item['value'])}")
-    return "\n".join(f"- {line}" for line in lines)
+            out.append({"key": key, "label": f"{icon} {t(de, en)}: {describe(item['value'])}", "default": True, "add": {key: item["value"]}})
+    return out
+
+
+def options_from_choices(found: list[dict[str, Any]], selected: list[str]) -> dict[str, Any]:
+    """Merge the options of the ticked choices."""
+    opts: dict[str, Any] = {}
+    for c in found:
+        if c["key"] not in selected:
+            continue
+        for k, v in c["add"].items():
+            if isinstance(v, list):
+                opts[k] = [*opts.get(k, []), *v]
+            else:
+                opts[k] = v
+    return opts

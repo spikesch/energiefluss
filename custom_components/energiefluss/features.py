@@ -16,6 +16,7 @@ from .const import (
     CONF_GRID_EXPORT_POWER,
     CONF_GRID_IMPORT_POWER,
     CONF_GRID_POWER,
+    CONF_HOME_POWER,
     CONF_SOLAR_STRINGS,
     CONF_WALLBOX_POWER,
 )
@@ -37,6 +38,12 @@ def _parts(cfg: dict[str, Any]) -> dict[str, bool]:
         "wallbox": wallbox,
         "loads": fixed or flexible or wallbox or backup,
     }
+
+
+def _nothing(cfg: dict[str, Any]) -> bool:
+    """Nothing set up yet: no sensors at all (they would only be 'unavailable')."""
+    parts = _parts(cfg)
+    return not (parts["solar"] or parts["grid"] or parts["battery"] or parts["loads"] or cfg.get(CONF_HOME_POWER))
 
 
 # sensor key -> part that must be configured (None: always)
@@ -67,10 +74,14 @@ TOTAL_PART: dict[str, str | None] = {
 
 
 def wanted_power_sensors(cfg: dict[str, Any]) -> set[str]:
+    if _nothing(cfg):
+        return set()
     parts = _parts(cfg)
     return {k for k, p in POWER_SENSOR_PART.items() if p is None or parts[p]}
 
 
 def wanted_totals(cfg: dict[str, Any]) -> set[str]:
+    if _nothing(cfg):
+        return set()
     parts = _parts(cfg)
     return {k for k, p in TOTAL_PART.items() if p is None or parts[p]}

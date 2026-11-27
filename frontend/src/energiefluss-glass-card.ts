@@ -40,7 +40,7 @@ const GLASS = {
   battery: "#3ee08f",
   grid: "#4db2ff",
   home: "#2fd4b4",
-  flexible: "#6f9dff",
+  flexible: "#3f86ff",
   backup: "#ff6a3d",
   inverter: "#a8d4ff",
 };
@@ -83,7 +83,7 @@ const BAT_H = 72; // glass battery: cap at top, cylinder down to top + BAT_H
 const BAT_STAGGER = 0.6; // share of the classic up/down offset between batteries
 const FONT_SCALE = 0.7; // all text smaller than in the classic look
 const BALL_BIG = 5.2;
-const BALL_MEDIUM = 2.7;
+const BALL_MEDIUM = 3.3;
 const BALL_SMALL = 1.6;
 const BALL_R: Record<BallKind, number> = { big: BALL_BIG, medium: BALL_MEDIUM, small: BALL_SMALL };
 

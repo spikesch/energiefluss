@@ -3185,7 +3185,7 @@ const Y = {
   battery: "#3ee08f",
   grid: "#4db2ff",
   home: "#2fd4b4",
-  flexible: "#6f9dff",
+  flexible: "#3f86ff",
   backup: "#ff6a3d",
   inverter: "#a8d4ff"
 }, U = "#cfeaff", ci = [
@@ -3193,7 +3193,7 @@ const Y = {
   [1.6, 2.4, -1.8, -1.2],
   [-1.2, -1, 2, 1.4],
   [0.8, 2.2, -2.4, 0.4]
-], Nt = 26, hi = 2.5, di = 0.7, It = 72, pi = 0.6, ui = 0.7, ys = 5.2, _i = 2.7, fi = 1.6, ts = { big: ys, medium: _i, small: fi }, bs = 6, ws = 0, xs = 130, _e = xs / ft.width, gi = import.meta.url.replace(/[^/]*$/, "") + ft.file, es = 0, Rt = 3.5, re = 44, ae = 18, vs = ft.face.map(([l, t]) => [bs + l * _e, ws + t * _e]), xt = (l, t) => {
+], Nt = 26, hi = 2.5, di = 0.7, It = 72, pi = 0.6, ui = 0.7, ys = 5.2, _i = 3.3, fi = 1.6, ts = { big: ys, medium: _i, small: fi }, bs = 6, ws = 0, xs = 130, _e = xs / ft.width, gi = import.meta.url.replace(/[^/]*$/, "") + ft.file, es = 0, Rt = 3.5, re = 44, ae = 18, vs = ft.face.map(([l, t]) => [bs + l * _e, ws + t * _e]), xt = (l, t) => {
   const [e, s, n, o] = vs, i = [e[0] + (s[0] - e[0]) * l, e[1] + (s[1] - e[1]) * l], c = [o[0] + (n[0] - o[0]) * l, o[1] + (n[1] - o[1]) * l];
   return [i[0] + (c[0] - i[0]) * t, i[1] + (c[1] - i[1]) * t];
 }, ss = (() => {

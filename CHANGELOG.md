@@ -2,6 +2,18 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.4
+
+**Deutsch**
+
+- Glas-Karte: Die mittlere Kugel der Züge (je volle 100 W) ist etwas größer.
+- Glas-Karte: Die Box „Zusätzlich“ und ihre Leitungen sind klar blau statt lavendel.
+
+**English**
+
+- Glass card: the medium train balls (per full 100 W) are a bit bigger.
+- Glass card: the "Zusätzlich" box and its pipes are clear blue instead of lavender.
+
 ## 0.4.3
 
 **Deutsch**

@@ -2,7 +2,7 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
-## Unreleased
+## 0.3.3
 
 **Deutsch**
 

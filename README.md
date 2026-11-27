@@ -80,7 +80,7 @@ Daneben gibt es **Notstrom-Verbraucher**: Geräte, die direkt am eigenen Ausgang
 
 1. HACS → ⋮ → *Benutzerdefinierte Repositories* → `https://github.com/spikesch/energiefluss` hinzufügen, Typ **Integration**.
 2. **Wattrio Energiefluss** installieren und Home Assistant neu starten.
-3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Wattrio Energiefluss*, einen Namen vergeben.
+3. *Einstellungen → Geräte & Dienste → Integration hinzufügen → Wattrio Energiefluss*.
 
 **Manuell:** den Ordner `custom_components/energiefluss` nach `config/custom_components/` kopieren und neu starten.
 
@@ -90,9 +90,20 @@ Die Karten registriert die Integration selbst – eine eigene Lovelace-Ressource
 
 ## Einrichtung
 
-1. In der Seitenleiste **Wattrio** öffnen (oder bei der Integration auf *Konfigurieren*).
-2. **Sensoren erkennen** für Vorschläge, oder die Sensoren Abschnitt für Abschnitt selbst wählen: *Solar, Batterien, Netz, Wallbox / E-Auto, Verbraucher*.
-3. Speichern – die Sensoren der Integration entstehen sofort.
+Der Einrichtungsdialog führt durch alles:
+
+1. **Name** der Anlage vergeben.
+2. **Gefundene Sensoren:** Wattrio sucht selbst nach PV, Netz, Batterien, Hausverbrauch, Wallbox und Strompreis und zeigt, was es gefunden hat. Mit einem Haken übernehmen.
+3. **Look wählen:** *Glas*, *Klassik* oder *kein Dashboard*. Wattrio legt dann ein Dashboard **Energiefluss** in der Seitenleiste an, auf dem die Karte schon läuft.
+
+## Nach der Installation
+
+Eine Benachrichtigung (Glocke unten links) sagt dir, wo alles ist:
+
+- **Energiefluss** in der Seitenleiste – das neue Dashboard mit der Karte.
+- **Wattrio** in der Seitenleiste – Vorschau und Einstellungen. Hier prüfst oder änderst du die Sensoren (**Sensoren erkennen** schlägt sie erneut vor) und sortierst deine Verbraucher in **Grundlast** und **Zusatzverbraucher** ein.
+- **Karte auf einem anderen Dashboard:** Dashboard bearbeiten → *Karte hinzufügen* → nach **Wattrio** suchen → *Wattrio Energiefluss Glas* oder *Klassik*. Mehr ist nicht einzustellen.
+- Die Integration legt nur Sensoren für das an, was eingerichtet ist. Kommt später etwas hinzu (z. B. ein Akku), entstehen dessen Sensoren beim Speichern.
 
 ## Was die Integration selbst berechnet
 
@@ -219,7 +230,7 @@ In addition there are **backup loads**: devices on a battery's own output (e.g. 
 
 1. HACS → ⋮ → *Custom repositories* → add `https://github.com/spikesch/energiefluss`, type **Integration**.
 2. Install **Wattrio Energiefluss**, then restart Home Assistant.
-3. *Settings → Devices & services → Add integration → Wattrio Energiefluss*, give it a name.
+3. *Settings → Devices & services → Add integration → Wattrio Energiefluss*.
 
 **Manual:** copy `custom_components/energiefluss` into `config/custom_components/` and restart.
 
@@ -229,9 +240,20 @@ The cards are registered by the integration itself – there is no separate Love
 
 ## Setup
 
-1. Open **Wattrio** in the sidebar (or the integration's *Configure* link).
-2. Click **Sensoren erkennen** (detect sensors) for suggestions, or pick the sensors section by section: *Solar, Batterien, Netz, Wallbox / E-Auto, Verbraucher*.
-3. Save – the integration's sensors are created right away.
+The setup dialog walks you through everything:
+
+1. Give the system a **name**.
+2. **Detected sensors:** Wattrio looks for PV, grid, batteries, house consumption, wallbox and electricity price by itself and shows what it found. Tick the box to use them.
+3. **Pick a look:** *Glas*, *Klassik* or *no dashboard*. Wattrio then creates a dashboard **Energiefluss** in the sidebar with the card already running.
+
+## After installation
+
+A notification (bell, bottom left) tells you where everything is:
+
+- **Energiefluss** in the sidebar – the new dashboard with the card.
+- **Wattrio** in the sidebar – preview and settings. Check or change the sensors here (**Sensoren erkennen** suggests them again) and sort your loads into **Grundlast** (base load) and **Zusatzverbraucher** (additional loads).
+- **Card on another dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. Nothing else to configure.
+- The integration only creates sensors for what is set up. Add something later (e.g. a battery) and its sensors appear when you save.
 
 ## What the integration calculates itself
 

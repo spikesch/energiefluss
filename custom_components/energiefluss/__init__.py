@@ -15,12 +15,13 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import (
     config_validation as cv,
-    device_registry as dr,
     entity_registry as er,
 )
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    CARD_NONE,
+    CONF_SETUP_CARD,
     CARD_FILENAME,
     CARD_URL_BASE,
     PANEL_FILENAME,
@@ -50,7 +51,8 @@ from .const import (
     total_today_unique_id,
     load_today_unique_id,
 )
-from .detect import SensorInfo, suggest
+from .discovery import suggestions
+from .setup_dashboard import async_create_dashboard, notify
 from .hub import EnergieflussHub
 from .schema import normalize_options
 
@@ -93,9 +95,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: EnergieflussConfigEntry)
     entry.runtime_data = hub
     hub.async_start()
     entry.async_on_unload(hub.async_stop)
+    # first start after the config flow: take the one-time setup choice out of the
+    # entry before the reload listener exists (no reload loop)
+    card = entry.data.get(CONF_SETUP_CARD)
+    loads = int(entry.data.get("detected_loads") or 0)
+    if card is not None:
+        hass.config_entries.async_update_entry(entry, data={})
     entry.async_on_unload(entry.add_update_listener(_async_reload))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    if card is not None:
+        hass.async_create_task(_async_first_setup(hass, entry, card, loads))
     return True
+
+
+async def _async_first_setup(hass: HomeAssistant, entry: EnergieflussConfigEntry, card: str, loads: int) -> None:
+    url = await async_create_dashboard(hass, entry, card) if card != CARD_NONE else None
+    notify(hass, entry, card, url, loads)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: EnergieflussConfigEntry) -> bool:
@@ -313,21 +328,4 @@ def ws_suggest(
     hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
 ) -> None:
     """Suggest sensors for the editor from all sensor entities."""
-    ent_reg = er.async_get(hass)
-    dev_reg = dr.async_get(hass)
-    sensors: list[SensorInfo] = []
-    for state in hass.states.async_all("sensor"):
-        entry = ent_reg.async_get(state.entity_id)
-        device = dev_reg.async_get(entry.device_id) if entry and entry.device_id else None
-        sensors.append(
-            SensorInfo(
-                entity_id=state.entity_id,
-                name=state.name,
-                platform=entry.platform if entry else None,
-                device_id=entry.device_id if entry else None,
-                device_name=(device.name_by_user or device.name) if device else None,
-                unit=state.attributes.get("unit_of_measurement"),
-                device_class=state.attributes.get("device_class"),
-            )
-        )
-    connection.send_result(msg["id"], suggest(sensors))
+    connection.send_result(msg["id"], suggestions(hass))

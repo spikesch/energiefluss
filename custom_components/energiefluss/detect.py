@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -224,3 +225,64 @@ def suggest(sensors: list[SensorInfo]) -> dict[str, Any]:
         and not s.has(KW_WALLBOX)
     ]
     return out
+
+
+# Suggestions that hold one entity id and map 1:1 to an option of the same name
+# (same list as the editor's "apply all").
+SCALAR_KEYS = (
+    "solar_today",
+    "solar_forecast_remaining",
+    "grid_price",
+    "grid_import_today",
+    "grid_export_today",
+    "home_power",
+    "wallbox_power",
+    "wallbox_soc",
+)
+
+
+def options_from_suggestions(sg: dict[str, Any]) -> dict[str, Any]:
+    """Turn suggest() output into raw options (loads stay unsorted: the user decides)."""
+    opts: dict[str, Any] = {}
+    if sg.get("solar_strings"):
+        opts["solar_strings"] = list(sg["solar_strings"]["value"])
+    if sg.get("grid"):
+        opts.update(sg["grid"]["value"])
+    for key in SCALAR_KEYS:
+        if sg.get(key):
+            opts[key] = sg[key]["value"]
+    batteries = [dict(b["value"]) for b in sg.get("batteries") or []]
+    if batteries:
+        opts["batteries"] = batteries
+    return opts
+
+
+def summary(sg: dict[str, Any], name: Callable[[str], str], german: bool = True) -> str:
+    """Markdown list of what was found, for the setup dialog."""
+
+    def names(ids: list[str]) -> str:
+        return ", ".join(name(e) for e in ids if e)
+
+    t = (lambda de, en: de) if german else (lambda de, en: en)
+    lines: list[str] = []
+    if strings := (sg.get("solar_strings") or {}).get("value"):
+        label = t("PV", "PV") if len(strings) == 1 else t(f"PV ({len(strings)} Stränge)", f"PV ({len(strings)} strings)")
+        lines.append(f"☀️ **{label}:** {names(strings)}")
+    if grid := (sg.get("grid") or {}).get("value"):
+        ids = [grid.get("grid_power"), grid.get("grid_import_power"), grid.get("grid_export_power")]
+        lines.append(f"🔌 **{t('Netz', 'Grid')}:** {names([i for i in ids if i])}")
+    for bat in sg.get("batteries") or []:
+        b = bat["value"]
+        ids = [b.get("power"), b.get("charge_power"), b.get("discharge_power"), b.get("soc")]
+        lines.append(f"🔋 **{t('Batterie', 'Battery')} {b.get('name', '')}:** {names([i for i in ids if i])}")
+    for key, icon, de, en in (
+        ("home_power", "🏠", "Hausverbrauch", "House consumption"),
+        ("wallbox_power", "🚗", "Wallbox", "Wallbox"),
+        ("wallbox_soc", "🚗", "Ladestand Auto", "Car state of charge"),
+        ("grid_price", "💶", "Strompreis", "Electricity price"),
+        ("solar_today", "☀️", "PV-Ertrag heute", "PV yield today"),
+        ("solar_forecast_remaining", "☀️", "PV-Prognose", "PV forecast"),
+    ):
+        if item := sg.get(key):
+            lines.append(f"{icon} **{t(de, en)}:** {name(item['value'])}")
+    return "\n".join(f"- {line}" for line in lines)

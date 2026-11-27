@@ -27,6 +27,7 @@ from .const import (
     total_today_unique_id,
     load_today_unique_id,
 )
+from .features import wanted_power_sensors, wanted_totals
 from .hub import EnergieflussHub
 
 
@@ -121,7 +122,8 @@ async def async_setup_entry(
 ) -> None:
     """Create sensors for a config entry."""
     hub: EnergieflussHub = entry.runtime_data
-    entities: list[EfSensor] = [EfSensor(hub, d) for d in GLOBAL_SENSORS]
+    power_keys = wanted_power_sensors(hub.config)
+    entities: list[SensorEntity] = [EfSensor(hub, d) for d in GLOBAL_SENSORS if d.key in power_keys]
 
     batteries = hub.batteries
     if batteries:
@@ -130,26 +132,31 @@ async def async_setup_entry(
         name = bat.get(CONF_BATTERY_NAME) or f"Batterie {index}"
         entities += [EfSensor(hub, d, {"name": name}) for d in _battery_sensors(index)]
 
+    totals = wanted_totals(hub.config)
+    entities += [
+        EfEnergySensor(hub, key, total_today_unique_id(hub.entry.entry_id, name), name)
+        for key, (_attr, name) in ENERGY_TOTALS.items()
+        if name in totals
+    ]
     reg = er.async_get(hass)
-    async_add_entities(
-        [
-            *entities,
-            *(
-                EfEnergySensor(hub, key, total_today_unique_id(hub.entry.entry_id, name), name)
-                for key, (_attr, name) in ENERGY_TOTALS.items()
-            ),
-            *(
-                EfEnergySensor(
-                    hub,
-                    e,
-                    load_today_unique_id(hub.entry.entry_id, e),
-                    "load",
-                    {"name": _friendly(hass, reg, e)},
-                )
-                for e in hub.loads()
-            ),
-        ]
-    )
+    entities += [
+        EfEnergySensor(
+            hub,
+            e,
+            load_today_unique_id(hub.entry.entry_id, e),
+            "load",
+            {"name": _friendly(hass, reg, e)},
+        )
+        for e in hub.loads()
+    ]
+
+    # Sensors of parts that are no longer set up would stay as "unavailable".
+    keep = {e.unique_id for e in entities}
+    for old in er.async_entries_for_config_entry(reg, entry.entry_id):
+        if old.domain == "sensor" and old.unique_id not in keep:
+            reg.async_remove(old.entity_id)
+
+    async_add_entities(entities)
 
 
 def _friendly(hass: HomeAssistant, reg: er.EntityRegistry, entity_id: str) -> str:

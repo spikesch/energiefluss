@@ -3,9 +3,27 @@
     "step": {
       "user": {
         "title": "Wattrio Energiefluss einrichten",
-        "description": "Gib deiner Anlage einen Namen. Die Sensoren ordnest du danach im visuellen Editor zu: in der Seitenleiste unter **Wattrio** ([öffnen]({url})).",
+        "description": "Gib deiner Anlage einen Namen. Danach sucht Wattrio selbst nach deinen PV-, Netz- und Batterie-Sensoren.",
         "data": {
           "name": "Name der Anlage"
+        }
+      },
+      "detect": {
+        "title": "Diese Sensoren wurden gefunden",
+        "description": "Wattrio hat in deinem Home Assistant diese Sensoren gefunden:\n\n{found}\n\nÜbernehmen? Prüfen und ändern kannst du alles später in der Seitenleiste unter **Wattrio**.",
+        "data": {
+          "use_detected": "Gefundene Sensoren übernehmen"
+        }
+      },
+      "nothing": {
+        "title": "Keine passenden Sensoren gefunden",
+        "description": "Wattrio hat keine PV-, Netz- oder Batterie-Sensoren erkannt. Kein Problem: Ordne sie nach der Einrichtung in der Seitenleiste unter **Wattrio** zu – eine kurze Liste zum Anklicken."
+      },
+      "card": {
+        "title": "Welcher Look?",
+        "description": "Wattrio legt ein neues Dashboard **Energiefluss** in der Seitenleiste mit dieser Karte an. Beide Karten kannst du später auch selbst auf jedes Dashboard setzen.",
+        "data": {
+          "setup_card": "Karte"
         }
       }
     },
@@ -116,6 +134,15 @@
       },
       "wallbox_power": {
         "name": "Wallbox"
+      }
+    }
+  },
+  "selector": {
+    "setup_card": {
+      "options": {
+        "glass": "Glas – 2.5D-Glas-Look mit Glasrohren und leuchtenden Kugeln",
+        "classic": "Klassik – flach und schlicht",
+        "none": "Kein Dashboard – ich setze die Karte selbst"
       }
     }
   }

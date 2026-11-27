@@ -8,6 +8,7 @@
   "dependencies": [
     "frontend",
     "http",
+    "lovelace",
     "panel_custom",
     "websocket_api"
   ],
@@ -16,5 +17,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/spikesch/energiefluss/issues",
   "requirements": [],
-  "version": "0.3.3"
+  "version": "0.4.0"
 }

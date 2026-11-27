@@ -2,6 +2,20 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.0
+
+**Deutsch**
+
+- Einrichtung ohne Anleitung: Nach dem Namen sucht Wattrio selbst die Sensoren und zeigt, was es gefunden hat. Danach wählst du *Glas*, *Klassik* oder *kein Dashboard*, und Wattrio legt ein Dashboard **Energiefluss** mit laufender Karte an.
+- Nach der Einrichtung sagt eine Benachrichtigung, wo Dashboard, Einstellungen und Karten zu finden sind.
+- Es entstehen nur noch Sensoren für das, was eingerichtet ist, statt einer langen Liste „nicht verfügbar“. Sensoren von entfernten Teilen werden aufgeräumt.
+
+**English**
+
+- Setup without reading a manual: after the name, Wattrio detects the sensors itself and shows what it found. Then pick *Glas*, *Klassik* or *no dashboard*, and Wattrio creates a dashboard **Energiefluss** with the card running.
+- After setup, a notification says where the dashboard, the settings and the cards are.
+- Sensors are only created for what is set up, no more long "unavailable" list. Sensors of removed parts are cleaned up.
+
 ## 0.3.3
 
 **Deutsch**

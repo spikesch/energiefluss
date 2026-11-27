@@ -114,3 +114,20 @@ def test_wallbox_and_car():
     assert out["wallbox_soc"]["value"] == "sensor.tesla_battery_level"
     assert [b["value"]["name"] for b in out["batteries"]] == ["Senec"]  # the car is no house battery
     assert out["loads"] == []
+
+
+def test_options_from_suggestions_and_summary():
+    sensors = [
+        S("sensor.pv1", "PV String 1", "template", None, None, "W", "power"),
+        S("sensor.grid", "Netz Leistung", "template", None, None, "W", "power"),
+        S("sensor.akku", "Batterie Leistung", "template", None, None, "W", "power"),
+        S("sensor.akku_soc", "Batterie Ladestand", "template", None, None, "%", "battery"),
+        S("sensor.fridge", "Kühlschrank", "shelly", "d2", "Plug", "W", "power"),
+    ]
+    sg = detect.suggest(sensors)
+    opts = detect.options_from_suggestions(sg)
+    assert "sensor.pv1" in opts["solar_strings"]
+    assert opts["batteries"] and "loads" not in opts
+    text = detect.summary(sg, lambda e: e.upper())
+    assert "SENSOR.PV1" in text and text.startswith("- ")
+    assert detect.summary({}, str) == ""

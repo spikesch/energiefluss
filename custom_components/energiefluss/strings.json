@@ -3,9 +3,27 @@
     "step": {
       "user": {
         "title": "Set up Wattrio Energiefluss",
-        "description": "Give your system a name. Afterwards assign the sensors in the visual editor: **Wattrio** in the sidebar ([open]({url})).",
+        "description": "Give your system a name. Next, Wattrio looks for your solar, grid and battery sensors by itself.",
         "data": {
           "name": "System name"
+        }
+      },
+      "detect": {
+        "title": "Found these sensors",
+        "description": "Wattrio found these sensors in your Home Assistant:\n\n{found}\n\nUse them? You can check and change everything later in the sidebar under **Wattrio**.",
+        "data": {
+          "use_detected": "Use the detected sensors"
+        }
+      },
+      "nothing": {
+        "title": "No matching sensors found",
+        "description": "Wattrio found no solar, grid or battery sensors it recognises. No problem: after the setup assign them in the sidebar under **Wattrio** – a short list to click through."
+      },
+      "card": {
+        "title": "Which look?",
+        "description": "Wattrio creates a new dashboard **Energiefluss** in the sidebar with this card. You can also add both cards to any dashboard yourself later.",
+        "data": {
+          "setup_card": "Card"
         }
       }
     },
@@ -116,6 +134,15 @@
       },
       "wallbox_power": {
         "name": "Wallbox"
+      }
+    }
+  },
+  "selector": {
+    "setup_card": {
+      "options": {
+        "glass": "Glas – 2.5D glass look with glass pipes and glowing balls",
+        "classic": "Klassik – flat, plain look",
+        "none": "No dashboard – I add the card myself"
       }
     }
   }

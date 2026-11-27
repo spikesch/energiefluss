@@ -98,4 +98,13 @@ def home_today_unique_id(entry_id: str) -> str:
 CARD_FILENAME = "energiefluss-card.js"
 PANEL_FILENAME = "energiefluss-panel.js"
 PANEL_URL_PATH = "energiefluss"
+
+# Setup: card for the dashboard created after the config flow (entry.data, once)
+CONF_SETUP_CARD = "setup_card"
+CARD_GLASS = "glass"
+CARD_CLASSIC = "classic"
+CARD_NONE = "none"
+CARD_CHOICES = (CARD_GLASS, CARD_CLASSIC, CARD_NONE)
+CARD_TYPES = {CARD_GLASS: "custom:energiefluss-glass-card", CARD_CLASSIC: "custom:energiefluss-card"}
+DASHBOARD_URL = "wattrio-energiefluss"
 CARD_URL_BASE = "/energiefluss_static"

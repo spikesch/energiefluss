@@ -177,10 +177,11 @@ def icon() -> None:
     big = Image.new("L", (size * 4, size * 4), 0)
     ImageDraw.Draw(big).rounded_rectangle((0, 0, size * 4 - 1, size * 4 - 1), radius=ICON_RADIUS * 4, fill=255)
     face.putalpha(big.resize((size, size), Image.LANCZOS))
-    out = ROOT / "docs" / "brand"
-    out.mkdir(parents=True, exist_ok=True)
-    for name, px in (("icon.png", 256), ("icon@2x.png", 512)):
-        face.resize((px, px), Image.LANCZOS).save(out / name, optimize=True)
+    # docs/brand for the README, custom_components/<domain>/brand for HACS / Home Assistant
+    for out in (ROOT / "docs" / "brand", ROOT / "custom_components" / "energiefluss" / "brand"):
+        out.mkdir(parents=True, exist_ok=True)
+        for name, px in (("icon.png", 256), ("icon@2x.png", 512)):
+            face.resize((px, px), Image.LANCZOS).save(out / name, optimize=True)
     face.resize((256, 256), Image.LANCZOS).save(ROOT / "docs" / "logo.png", optimize=True)
     print(f"icon-source.jpg: box {box}, out docs/logo.png, docs/brand/icon.png, icon@2x.png")
 

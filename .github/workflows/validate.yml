@@ -24,8 +24,6 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
-          # not (yet) in the home-assistant/brands repository
-          ignore: brands
 
   tests:
     name: Tests and build

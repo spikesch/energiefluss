@@ -796,6 +796,17 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return kinds.map((k, i) => ({ r: BALL_R[k], colour: tints[i] }));
   }
 
+  // on the shared feed of a list the balls are consolidated (big ones per
+  // full 1000 W of the whole group); they split up at the bracket
+  protected _feedTrain(d: string, watts: number, colour: string, source?: string): SVGTemplateResult {
+    if (watts < MIN_FLOW_W) return svg``;
+    const balls = this._wagonBalls(watts, colour, source);
+    const { begins, travel, period } = this._trainOf(d, watts);
+    return svg`${balls.map((b, i) =>
+      this._ball(b.colour, { route: d, forward: true, r: b.r, begin: begins[i], travel, period }),
+    )}`;
+  }
+
   /**
    * Where a battery's backup loads get their power: from the battery (green);
    * a backup-only battery passes power from the house through as well, that

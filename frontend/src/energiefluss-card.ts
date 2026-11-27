@@ -393,6 +393,11 @@ export class EnergieflussCard extends LitElement {
   protected _wagonBalls(_watts: number, _colour: string, _source?: string): { r: number; colour: string }[] | null {
     return null;
   }
+  /** One train for a whole group on its shared feed (house to the list's
+   *  bracket); null = every load's wagon rides the whole way from the house. */
+  protected _feedTrain(_d: string, _watts: number, _colour: string, _source?: string): SVGTemplateResult | null {
+    return null;
+  }
   /** Dots of the house line (from the inverter to the house). */
   protected _houseDots(d: string, colour: string, watts: number | null): SVGTemplateResult {
     return this._dot(d, colour, watts, true);
@@ -976,7 +981,13 @@ export class EnergieflussCard extends LitElement {
       for (const k of kids) rows.push({ ...k, child: true, parentRow: at });
     }
     const entry = this._rowEntryX;
-    const path = (l: ListLoad, i: number) => `${l.route ?? l.trunk} V ${y0 + i * R + mid} H ${entry}`;
+    // a look may run the group's power as one train up to the bracket; the
+    // wagons then start there and split off to their rows
+    const feedRoute = loads[0]?.route ?? loads[0]?.trunk;
+    const feedProbe = feedRoute ? this._feedTrain(feedRoute, 0, colour) : null;
+    const split = feedProbe !== null;
+    const path = (l: ListLoad, i: number) =>
+      split ? `M ${BRACKET_X} ${y0 + mid} V ${y0 + i * R + mid} H ${entry}` : `${l.route ?? l.trunk} V ${y0 + i * R + mid} H ${entry}`;
     // a contained load's wagon rides into its parent's station and on along
     // the dashed connector to its own row
     const childPath = (l: Row, i: number) =>
@@ -1018,6 +1029,9 @@ export class EnergieflussCard extends LitElement {
     }
     const wagonDots = (d: string, w: number | null, i: number) =>
       (train.get(i) ?? []).map((t) => this._dot(d, t.tint ?? colour, w, true, 2.4, t));
+    const feedPower = running.reduce((s, { w }) => s + Math.max(w ?? 0, 0), 0);
+    const feedDots =
+      split && feedRoute && feedPower >= MIN_FLOW_W ? this._feedTrain(feedRoute, feedPower, colour, loads[0]?.source) : nothing;
     const lastMain = rows.reduce((last, r, i) => (r.child ? last : i), 0);
     // the bracket and all row branches as one path, so their joins are clean
     // looks may draw the group's feed as part of it too (one pipe from the source)
@@ -1029,6 +1043,7 @@ export class EnergieflussCard extends LitElement {
     ].join(" ");
     return svg`
       ${this._branch(pipes, colour, "row")}
+      ${feedDots}
       ${rows.map((l, i) => {
         const y = y0 + i * R;
         const idle = l.w === null || Math.abs(l.w) < MIN_FLOW_W;

@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.5
+
+**Deutsch**
+
+- Glas-Karte: Auf der gemeinsamen Leitung vom Haus zu einer Verbraucher-Gruppe fährt jetzt ein zusammengefasster Zug für die ganze Gruppe – mit großen Kugeln je volle 1000 W. Erst an der Verteilung teilt er sich auf die einzelnen Geräte auf.
+
+**English**
+
+- Glass card: on the shared pipe from the house to a load group one combined train now runs for the whole group – with big balls per full 1000 W. It splits up into the single loads only at the bracket.
+
 ## 0.4.4
 
 **Deutsch**

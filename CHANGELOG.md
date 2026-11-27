@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.3.2
+
+**Deutsch**
+
+- Icon der Integration wird mitgeliefert (für HACS und Home Assistant); erfüllt alle Prüfungen für die HACS-Standardliste.
+
+**English**
+
+- The integration ships its icon (for HACS and Home Assistant); passes all checks for the HACS default list.
+
 ## 0.3.1
 
 **Deutsch**

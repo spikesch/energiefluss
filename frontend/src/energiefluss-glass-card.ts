@@ -3,7 +3,7 @@
 // them, a glass house and pylon and batteries filled with moving liquid.
 // Everything animated stays filter-free so the card stays light on the CPU.
 
-import { css, svg, nothing, type SVGTemplateResult } from "lit";
+import { css, svg, nothing, type PropertyValues, type SVGTemplateResult } from "lit";
 import {
   EnergieflussCard,
   LOAD_PW,
@@ -204,7 +204,7 @@ const PYLON_Y = 122;
 const PYLON_S = 0.7;
 // left column below the pylon: grid tile, then wallbox
 const TILE_X = 8;
-const TILE_W = 54;
+const TILE_W = 48;
 const PANEL_GAP = 1.25; // air between two load group panels
 const TOTAL_H = 15; // the "Gesamt" box above the load groups
 const GRID_TILE_Y = 196;
@@ -220,8 +220,8 @@ const invAt = ([x, y]: [number, number]): [number, number] => [
 // connector tips in card units: PV, grid, wallbox on the left side
 const INV_LEFT = INVERTER_IMAGE.left.map(invAt);
 // glass car picture below the grid tile (served next to this script)
-const CAR_X = 2;
-const CAR_W = 120;
+const CAR_X = 6;
+const CAR_W = 132;
 const CAR_URL = import.meta.url.replace(/[^/]*$/, "") + CAR_IMAGE.file;
 // height offsets (picture px) of the liquid surface's corners far-front,
 // near-front, near-rear, far-rear: the surface tilts gently back and forth
@@ -367,6 +367,58 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return 16 + PANEL_GAP;
   }
 
+  // -- balls that finish their way ---------------------------------------------
+  // When a load switches off (or a train gets shorter), its balls would vanish
+  // where they are. Instead each one that is on its way rides on to the end once.
+  private _seen = new Map<string, { colour: string; b: Ball }>();
+  private _lastSeen = new Map<string, { colour: string; b: Ball }>();
+  private _routeIdx = new Map<string, number>();
+  private _ghosts: { colour: string; route: string; forward: boolean; r: number; from: number; dur: number; start: number; until: number }[] = [];
+
+  protected render() {
+    this._lastSeen = this._seen;
+    this._seen = new Map();
+    this._routeIdx = new Map();
+    return super.render();
+  }
+
+  protected updated(changed: PropertyValues): void {
+    super.updated(changed);
+    const svgEl = this.renderRoot.querySelector("svg") as SVGSVGElement | null;
+    if (!svgEl || !this._lastSeen.size) return;
+    const t = svgEl.getCurrentTime();
+    let added = false;
+    for (const [key, { colour, b }] of this._lastSeen) {
+      if (this._seen.has(key) || t < b.begin) continue;
+      const local = (t - b.begin) % b.period;
+      if (local >= b.travel) continue; // waiting for the next train, not on its way
+      const dur = b.travel - local;
+      this._ghosts.push({ colour, route: b.route, forward: b.forward, r: b.r, from: local / b.travel, dur, start: t, until: performance.now() + dur * 1000 });
+      setTimeout(() => this.requestUpdate(), dur * 1000 + 50);
+      added = true;
+    }
+    this._lastSeen = new Map();
+    if (added) this.requestUpdate();
+  }
+
+  protected _overlay(): SVGTemplateResult {
+    const now = performance.now();
+    this._ghosts = this._ghosts.filter((g) => g.until > now);
+    return svg`${this._ghosts.map((g) => {
+      const dur = `${g.dur.toFixed(2)}s`;
+      const begin = `${g.start.toFixed(2)}s`;
+      const points = g.forward ? `${g.from.toFixed(4)};1` : `${(1 - g.from).toFixed(4)};0`;
+      return this._orb(
+        g.r,
+        g.colour,
+        svg`<animateMotion dur=${dur} begin=${begin} fill="freeze" calcMode="linear" rotate="auto" keyPoints=${points}
+            keyTimes="0;1" path=${g.route} />
+          <animate attributeName="opacity" dur=${dur} begin=${begin} fill="freeze" calcMode="discrete" values="1;0"
+            keyTimes="0;1" />`,
+      );
+    })}`;
+  }
+
   /** Gradients for glass, shadows, liquid and the halos of the balls. */
   protected _defs(): SVGTemplateResult {
     const c = this._c;
@@ -450,9 +502,12 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     power: number | null,
     forward = true,
     r = 3.2,
-    train?: { period: number; begin: number; travel: number },
+    train?: { period: number; begin: number; travel: number; radius?: number },
   ): SVGTemplateResult {
-    if (train) return super._dot(d, colour, power, forward, r, train);
+    if (train) {
+      if (power === null || Math.abs(power) < MIN_FLOW_W) return svg``;
+      return this._ball(colour, { route: d, forward, r: train.radius ?? r, begin: train.begin, travel: train.travel, period: train.period });
+    }
     if (power === null || Math.abs(power) < MIN_FLOW_W) return svg``;
     const { radii, travel, period, begins } = this._trainOf(d, power);
     return svg`${begins.map((b, i) =>
@@ -462,6 +517,10 @@ export class EnergieflussGlassCard extends EnergieflussCard {
 
   /** One ball riding its route once per period. */
   protected _ball(colour: string, b: Ball): SVGTemplateResult {
+    // remember it: if it is gone after the next update, it rides its way to the end
+    const n = this._routeIdx.get(b.route) ?? 0;
+    this._routeIdx.set(b.route, n + 1);
+    this._seen.set(`${b.forward ? ">" : "<"}${b.route}#${n}`, { colour, b });
     const k = (b.travel / b.period).toFixed(4);
     const dur = `${b.period.toFixed(2)}s`;
     const begin = `${b.begin.toFixed(2)}s`;
@@ -938,10 +997,10 @@ export class EnergieflussGlassCard extends EnergieflussCard {
         ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" class="dim" style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
         : nothing}
       ${rows.length
-        ? svg`<line x1=${TILE_X + 4} x2=${TILE_X + TILE_W - 4} y1=${sep} y2=${sep} class="sep" stroke=${c} />`
+        ? svg`<line x1=${TILE_X + 3} x2=${TILE_X + TILE_W - 3} y1=${sep} y2=${sep} class="sep" stroke=${c} />`
         : nothing}
       ${rows.map(
-        (r, i) => svg`<text x=${TILE_X + 4} y=${sep + 8 + i * 8.5} class=${r.active ? "val" : "dim"} style=${`font-size:${this._fs(8.5)}px`}
+        (r, i) => svg`<text x=${TILE_X + 3} y=${sep + 8 + i * 8.5} class=${r.active ? "val" : "dim"} style=${`font-size:${this._fs(7.8)}px`}
           ><tspan fill=${r.active ? c : nothing}>${r.arrow}</tspan> ${fmtEnergy(r.kwh, this._loc)}<tspan
           class=${r.active ? "" : "tiny"} style=${`font-size:${this._fs(7.5)}px`} fill=${r.active ? c : nothing}> ${r.name}</tspan></text>`,
       )}
@@ -1037,9 +1096,9 @@ export class EnergieflussGlassCard extends EnergieflussCard {
               font-weight="600">${fmtPercent(soc, this._loc)}</text>`
           : nothing}
         <text transform=${`translate(${px.toFixed(1)} ${py.toFixed(1)}) rotate(${angle})`} class=${idle ? "dim" : "val"}
-          style=${`font-size:${this._fs(8)}px`} font-weight="600">${fmtPower(w, this._loc)}</text>
+          style=${`font-size:${this._fs(11)}px`} font-weight="600">${fmtPower(w, this._loc)}</text>
         <text transform=${`translate(${ex.toFixed(1)} ${ey.toFixed(1)}) rotate(${-angle})`} class="dim"
-          style=${`font-size:${this._fs(8)}px`}>${fmtEnergy(today, this._loc)}</text>
+          style=${`font-size:${this._fs(11)}px`}>${fmtEnergy(today, this._loc)}</text>
       </g>`;
   }
 

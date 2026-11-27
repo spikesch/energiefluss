@@ -421,6 +421,17 @@ export class EnergieflussCard extends LitElement {
     return p + Math.max(this._sumW(bat.backup) ?? 0, 0);
   }
 
+  /** Today's energy of the house net: the house's daily energy minus that of all
+   *  backup loads (each has its own daily counter). */
+  protected get _houseNetToday(): number | null {
+    const home = num(this._s(this._layout?.home_today));
+    if (home === null) return null;
+    const backup = (this._layout?.batteries ?? [])
+      .flatMap((b) => b.backup ?? [])
+      .reduce((s, l) => s + (num(this._s(l.today)) ?? 0), 0);
+    return Math.max(home - backup, 0);
+  }
+
   /** Active power of all backup loads: batteries feed them straight from their own
    *  output, they are not on the house net. Their own sensors, not a battery's
    *  output (that may be apparent power and include its own consumption). */
@@ -499,6 +510,11 @@ export class EnergieflussCard extends LitElement {
   /** Draws a moving dot; `motion` holds its animation elements. Looks override this. */
   protected _orb(radius: number, colour: string, motion: SVGTemplateResult, hidden = false): SVGTemplateResult {
     return svg`<circle r=${radius} fill=${colour} opacity=${hidden ? "0" : nothing}>${motion}</circle>`;
+  }
+
+  /** Drawn last, on top of everything (nothing in the classic look). */
+  protected _overlay(): SVGTemplateResult {
+    return svg``;
   }
 
   /** Extra <defs> (filters, gradients) for alternative looks. */
@@ -1157,7 +1173,7 @@ export class EnergieflussCard extends LitElement {
       )}
       ${this._tap(L.entities.home_power, this._box(215, this._houseY, 70, 26, c, fmtPower(houseNet, this._loc), 13))}
       <text x="211" y=${this._houseY + 13} text-anchor="end" class="lbl">Haus</text>
-      <text x="211" y=${this._houseY + 25} text-anchor="end" class="tiny val">${fmtEnergy(num(this._s(L.home_today)), this._loc)}</text>
+      <text x="211" y=${this._houseY + 25} text-anchor="end" class="tiny val">${fmtEnergy(this._houseNetToday, this._loc)}</text>
     `;
   }
 
@@ -1218,6 +1234,7 @@ export class EnergieflussCard extends LitElement {
         <svg viewBox=${`0 0 ${VIEW_W} ${this._viewH}`} xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Energiefluss"
           @click=${this._onTap}>
           ${this._defs()} ${this._solar()} ${this._batteries()} ${this._inverter()} ${this._home()} ${this._grid()}
+          ${this._overlay()}
         </svg>
       </ha-card>
     `;

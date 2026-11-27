@@ -44,6 +44,13 @@ def test_home_is_computed_from_balance():
     assert r.surplus == 1500
 
 
+def test_unavailable_home_sensor_falls_back_to_balance():
+    # a house sensor is configured but has no value right now
+    r = compute(Inputs(solar_strings=[1000], grid_power=200, home_measured=None, home_configured=True))
+    assert r.home_power == 1200
+    assert "home" in r.computed
+
+
 def test_measured_home_wins():
     r = compute(Inputs(solar_strings=[1000], grid_power=200, home_measured=900))
     assert r.home_power == 900

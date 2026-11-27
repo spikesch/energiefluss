@@ -1,13 +1,41 @@
-# Changelog
+# Changelog / Änderungen
+
+*Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
 ## Unreleased
+
+**Deutsch**
+
+- Haus-Box und Hausleitung zeigen das Hausnetz ohne die Notstrom-Geräte, die Akkus direkt versorgen; eine kleine „Gesamt“-Box über den Verbrauchern zeigt den vollen Verbrauch inkl. Notstrom.
+- Akkus mit Notstrom-Abgang: Ihre Leitung zum Speicher zeigt nur den Rest über ihre Notstrom-Last; Notstrom wird über die Wirkleistung der Geräte abgezogen.
+- Eingeklappte Listen: „+ N weitere“ zeigt die Summe der eingeklappten Verbraucher und bekommt ihren Zug.
+- Züge fahren nach dem Abschalten eines Verbrauchers noch bis zum Ziel.
+- Glas-Karte: größeres Glashaus, kleinere Netz-Kachel, Auto mit Werten am Sockel.
+- Anleitung vollständig auf Deutsch und Englisch: Grundlast und Zusatzverbraucher, was die Integration selbst berechnet und wie man fehlende Sensoren als Helfer anlegt.
+- Fällt ein eingetragener Hausverbrauch-Sensor aus, wird das Haus aus der Bilanz berechnet; der Tageswert am Haus zählt ohne Notstrom.
+
+**English**
 
 - House value and line show what the house net supplies, without the backup loads batteries feed directly; a small "Gesamt" box above the load groups shows the total consumption incl. backup loads.
 - Batteries with backup loads: their line to the storage box shows only what goes beyond their own backup load; backup loads are subtracted by their own (active power) sensors.
 - Folded load lists: the "+ N weitere" row shows the sum of the hidden loads and gets their train.
 - Glass card: bigger glass house, placed higher.
+- Trains finish their way when a load switches off.
+- Glass card: smaller grid tile, car with its values on the plate.
+- README fully in German and English: base load vs. additional loads, what the integration calculates itself, how to create missing sensors as helpers.
+- If a configured house sensor has no value, the house is calculated from the balance; the house's daily value excludes backup loads.
 
 ## 0.2.0
+
+**Deutsch**
+
+- Akkus lassen sich als *entlädt nur über Notstrom* markieren (z. B. EcoFlow): Ihr Eingang zählt auf der Hausseite, ihr Ausgang versorgt nur die Notstrom-Geräte; Hausleitung und Herkunftsfarben richten sich danach.
+- Glas-Karte: drei Kugelgrößen nach vollen Werten (1000 W / 100 W / 10 W, unter 10 W keine Kugel).
+- Glas-Karte: PV-Strings auf einem Glas-Solarmodul, breiterer PV-Sammler, kleinere Netz-Kachel, schmaler Abstand zwischen den Verbrauchergruppen, ohne „heute“.
+- Ein Klick auf einen Wert öffnet den zugehörigen Sensor.
+- Logo und Icons für Home Assistant.
+
+**English**
 
 - Batteries can be marked *only via backup* (e.g. EcoFlow): their input counts on the house side, their output only feeds their backup loads; the house line and source colours follow.
 - Glass card: three ball sizes counting full values (1000 W / 100 W / 10 W, nothing below 10 W).
@@ -15,7 +43,14 @@
 - Click a value to open its sensor's dialog.
 - Logo and Home Assistant brand icons.
 
-## 0.1.0 – first public version
+## 0.1.0 – erste Version / first public version
+
+**Deutsch**
+
+- Integration: visuelle Einrichtung (Seitenleiste und Kartendialog) mit Sensor-Erkennung; PV-Strings, bis zu 5 Akkus, Netz mit Preis und Einspeisevergütung, Wallbox mit Ladestand; Verbraucher als Grundlast und Zusatzverbraucher, enthaltene Verbraucher zählen einmal, Notstrom für bis zu 2 Akkus; berechnet einen fehlenden Wert aus der Energiebilanz; eigene Sensoren für Summen, *nicht erfasst*, Überschuss und Tagesenergie.
+- Karten: *Energiefluss* (klassisch) und *Energiefluss Glas* (2.5D-Glasoptik mit Kugelzügen, Herkunftsfarben, Quecksilbertropfen, Akkus und Auto mit Flüssigkeit, einklappbaren Listen, automatischer Leitungsführung).
+
+**English**
 
 **Integration**
 

@@ -1,4 +1,4 @@
-import { i as g, A as u, b as s, a as f, n as p, r as d } from "./energiefluss-shared-DijpqWKb.js";
+import { i as g, A as u, b as s, a as f, n as p, r as d } from "./energiefluss-shared-4XYPgQBE.js";
 var y = Object.defineProperty, a = (c, t, e, n) => {
   for (var i = void 0, o = c.length - 1, h; o >= 0; o--)
     (h = c[o]) && (i = h(t, e, i) || i);

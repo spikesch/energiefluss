@@ -196,7 +196,9 @@ def compute(inp: Inputs) -> Result:
     def known_bats() -> float:
         return sum(p for p in bat_powers if p is not None)
 
-    if not home_cfg:
+    # no house sensor, or it has no value right now (e.g. a template sensor whose
+    # source is unavailable): take the house from the energy balance
+    if home is None:
         if solar is not None or grid is not None or any(p is not None for p in bat_powers):
             home = max((solar or 0.0) + (grid or 0.0) - known_bats(), 0.0)
             computed.add("home")

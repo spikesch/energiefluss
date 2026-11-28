@@ -55,7 +55,7 @@ Daneben gibt es **Notstrom-Verbraucher**: Geräte, die direkt am eigenen Ausgang
 - Einrichtung in einer eigenen Seite *Wattrio* in der Seitenleiste und im Dialog „Karte bearbeiten“.
 - *Sensoren erkennen*: schlägt PV-Strings, Akkus, Netz, Preise, Wallbox und Verbraucher aus deinen vorhandenen Entitäten vor.
 - Kryptische Sensornamen: Die Suche zeigt, wo ein Sensor schon verwendet wird (Energie-Dashboard, Dashboards, Helfer, Automationen …) und wie er dort heißt. Verbraucher können diesen oder einen eigenen Namen bekommen, ohne dass der Sensor umbenannt wird.
-- PV: bis zu 4 Strings, Gesamtleistung, Ertrag heute, Prognose Rest.
+- PV: bis zu 4 Strings, Gesamtleistung (Summe der Strings oder ein eigener Sensor), Ertrag heute, Prognose Rest.
 - Akkus: bis zu 5, jeweils mit Leistung, Ladestand und Kapazität; Leistung als ein Sensor mit Vorzeichen oder als getrennte Sensoren für Laden und Entladen.
 - Netz: ein Sensor mit Vorzeichen oder getrennt Bezug / Einspeisung; aktueller Preis (z. B. Tibber) und Einspeisevergütung.
 - Verbraucher als **Grundlast** und **Zusatzverbraucher**; Verbraucher, die in anderen enthalten sind (z. B. ein Wasserkocher in einer gemessenen Unterverteilung), zählen nur einmal.
@@ -99,6 +99,7 @@ Der Einrichtungsdialog hat nur eine Seite: **Name** der Anlage und vier Schalter
 
 - Abschnitt für Abschnitt – *Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher*: prüfen, unten **Speichern**. Der Abschnitt bekommt ein ✓, klappt zu, der nächste geht auf.
 - Jeder Abschnitt fragt *Ja / Nein* und hat sein eigenes **Sensoren erkennen**, das nur dazu passende Sensoren vorschlägt. Notstrom stellst du direkt bei der jeweiligen Batterie ein, bei Solar höchstens 4 Stränge.
+- **Klick auf ein Feld der Grafik** öffnet rechts seine Einstellung: der Abschnitt klappt auf, das Feld leuchtet kurz auf. Bei Verbrauchern steht der Cursor gleich im Namensfeld.
 - Unter **Allgemein** schaltest du den Look zwischen **Glas** (Standard) und **Klassik** um.
 - Sind alle Abschnitte durch, zeigt die Wattrio-Seite gleich den Energiefluss; *Einstellungen* oben rechts.
 - **Karte auf einem eigenen Dashboard:** Dashboard bearbeiten → *Karte hinzufügen* → nach **Wattrio** suchen → *Wattrio Energiefluss Glas* oder *Klassik*. Erscheint sie nicht in der Liste, die Seite einmal neu laden.
@@ -203,7 +204,7 @@ In addition there are **backup loads**: devices on a battery's own output (e.g. 
 
 - Setup in its own sidebar page *Wattrio* and in the card's "edit card" dialog.
 - *Detect sensors*: suggests PV strings, batteries, grid, prices, wallbox and loads from your existing entities.
-- PV: up to 4 strings, total, today's yield, forecast rest.
+- PV: up to 4 strings, total (sum of the strings or a sensor of its own), today's yield, forecast rest.
 - Batteries: up to 5, each with power, state of charge and capacity; power as one signed sensor or as separate charge / discharge sensors.
 - Grid: one signed sensor or separate import / export sensors; current price (e.g. Tibber) and feed-in tariff.
 - Loads as **base load** and **additional loads**; loads contained in other loads (e.g. a kettle measured inside a sub-distribution) are counted only once.
@@ -248,6 +249,7 @@ The setup dialog has a single page: the system's **name** and four switches – 
 - Section by section – *Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher*: check, then **Speichern** (save) at the bottom. The section gets a ✓, closes, and the next one opens.
 - Every section asks *Ja / Nein* (yes / no) and has its own **Sensoren erkennen** (detect sensors) suggesting only matching sensors. Backup power is set right at each battery; solar takes at most 4 strings.
 - Cryptic sensor names: the search shows where a sensor is already used (energy dashboard, dashboards, helpers, automations …) and what it is called there. Loads can take that name or one of your own, without renaming the sensor.
+- **Click a field of the graphic** to open its setting on the right: the section opens and the field lights up briefly. For loads the cursor is already in the name field.
 - Under **Allgemein** (general) switch the look between **Glas** (default) and **Klassik**.
 - Once all sections are done, the Wattrio page shows the energy flow straight away; *Einstellungen* (settings) top right.
 - **Card on your own dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. If it is not in the list, reload the page once.

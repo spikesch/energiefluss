@@ -156,3 +156,17 @@ def test_old_buckets_are_dropped_and_roundtrip():
     assert min(c.buckets) >= 26 * 3600 - calc.KEEP_SECONDS
     again = EnergyCounter.from_dict(c.to_dict())
     assert again.since(0) == pytest.approx(c.since(0), abs=1e-5)
+
+
+def test_solar_total_sensor_replaces_strings_sum():
+    r = compute(Inputs(solar_strings=[2000, 1000], solar_total=2800, solar_total_configured=True, grid_power=0))
+    assert r.solar_power == 2800
+    assert r.home_power == 2800
+
+
+def test_solar_total_sensor_alone_and_unavailable():
+    r = compute(Inputs(solar_total=1500, solar_total_configured=True, grid_power=0))
+    assert r.solar_power == 1500
+    r = compute(Inputs(solar_strings=[1000], solar_total=None, solar_total_configured=True, grid_power=0))
+    assert r.solar_power is None
+    assert "solar" not in r.computed

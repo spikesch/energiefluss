@@ -2,6 +2,7 @@
 // interpretation of the chosen sensors, validation + saving via websocket.
 // Used by the sidebar panel and by the card's editor in the dashboard dialog.
 
+import type { EditTarget } from "./edit-target";
 import { LitElement, css, html, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { property, state } from "lit/decorators.js";
 import {
@@ -43,6 +44,7 @@ interface Battery {
 
 interface Options {
   solar_strings?: string[];
+  solar_total?: string;
   solar_today?: string;
   solar_forecast_remaining?: string;
   batteries?: Battery[];
@@ -131,7 +133,7 @@ export function guideOpen(o: { topics?: string[]; checked?: string[] } & Record<
   };
   const on: Record<string, boolean> = {
     battery: has("batteries"),
-    solar: has("solar_strings"),
+    solar: has("solar_strings") || has("solar_total"),
     tariff: has("grid_price"),
     wallbox: has("wallbox_power"),
   };
@@ -163,6 +165,7 @@ const SYSTEM_SCHEMA: Schema = [
 
 const SOLAR_SCHEMA: Schema = [
   { name: "solar_strings", selector: SENSORS },
+  { name: "solar_total", selector: SENSOR },
   { name: "solar_today", selector: SENSOR },
   { name: "solar_forecast_remaining", selector: SENSOR },
 ];
@@ -261,6 +264,7 @@ const LABELS: Record<string, string> = {
   title: "Name der Anlage",
   energy_period: "Tageswerte",
   solar_strings: "PV-Leistung (Strings / Wechselrichter)",
+  solar_total: "PV-Gesamtleistung (optional)",
   solar_today: "PV-Ertrag heute",
   solar_forecast_remaining: "Prognose Rest heute",
   name: "Name",
@@ -290,6 +294,7 @@ const LABELS: Record<string, string> = {
 const HELPERS: Record<string, string> = {
   energy_period: "Ab 0 Uhr setzt um Mitternacht auf null, 24 Stunden ist ein gleitendes Fenster.",
   solar_strings: "Mehrere Sensoren werden addiert. W oder kW.",
+  solar_total: "Leer lassen: Summe der Stränge. Sonst zeigt „PV gesamt“ diesen Sensor, z. B. die Leistung des Wechselrichters.",
   grid_export_price: "Optional statt des festen Werts, falls sich die Vergütung ändert.",
   fixed_loads: "Laufen, wann sie müssen, ihr Verbrauch lässt sich kaum verschieben – z. B. Kühlschrank, Router, Server, Heizungspumpe, Licht, TV.",
   flexible_loads: "Du bestimmst selbst, wann sie laufen – z. B. Waschmaschine, Trockner, Spülmaschine, Wallbox, Pool-Pumpe. Diese lassen sich in Zeiten mit PV-Überschuss oder günstigem dynamischem Strompreis (z. B. Tibber) legen.",
@@ -379,6 +384,8 @@ export class EnergieflussEditor extends LitElement {
   @state() private _choice: Partial<Record<Topic, boolean>> = {};
   /** Sections whose detected sensors are shown. */
   @state() private _detectIn = new Set<Topic>();
+  /** Found loads put aside with "Jetzt nicht" (shown again with the next search). */
+  @state() private _skipped = new Set<string>();
   /** Batteries (by index) where "Notstrom-Steckdosen: Ja" was clicked in this session. */
   @state() private _backupYes = new Set<number>();
 
@@ -413,6 +420,28 @@ export class EnergieflussEditor extends LitElement {
     this._message = undefined;
     const next = this._nextOpen();
     this._open = new Set(next ? [next] : []);
+  }
+
+  /** A field of the card was clicked in settings mode: open its section and show it. */
+  async focusTarget(t: EditTarget): Promise<void> {
+    if (!this._loadedFor) return;
+    if (OPTIONAL.includes(t.topic) && !this._isOn(t.topic)) this._choice = { ...this._choice, [t.topic]: true };
+    const wasOpen = this._open.has(t.topic);
+    this._open = new Set([t.topic]);
+    await this.updateComplete;
+    // a section that just opened: let its forms (ha-form renders late) take their height
+    if (!wasOpen) await new Promise((r) => setTimeout(r, 250));
+    const find = (key: string) => this.renderRoot.querySelector<HTMLElement>(`[data-focus="${CSS.escape(key)}"]`);
+    const el =
+      (t.load && find(`load-${t.load}`)) || (t.battery !== undefined && find(`battery-${t.battery}`)) || find(t.topic);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: el.dataset.focus === t.topic ? "start" : "center" });
+    el.classList.remove("flash");
+    void el.offsetWidth; // restart the animation
+    el.classList.add("flash");
+    el.addEventListener("animationend", () => el.classList.remove("flash"), { once: true });
+    const input = el.dataset.focus?.startsWith("load-") ? el.querySelector<HTMLInputElement>("input") : null;
+    if (input) setTimeout(() => input.focus({ preventScroll: true }), 400);
   }
 
   /** The first section of the guide that is switched on and not yet ticked off. */
@@ -478,7 +507,7 @@ export class EnergieflussEditor extends LitElement {
   private async _detect(topic: Topic): Promise<void> {
     if (!this.hass) return;
     this._detectIn = new Set([...this._detectIn, topic]);
-    if (this._suggestions) return;
+    this._skipped = new Set();
     this._detecting = true;
     try {
       this._suggestions = await this.hass.callWS<Suggestions>({ type: "energiefluss/suggest" });
@@ -559,7 +588,7 @@ export class EnergieflussEditor extends LitElement {
     const bats = d.batteries ?? [];
     switch (topic) {
       case "solar":
-        return !!((d.solar_strings ?? []).length || d.solar_today || d.solar_forecast_remaining);
+        return !!((d.solar_strings ?? []).length || d.solar_total || d.solar_today || d.solar_forecast_remaining);
       case "battery":
         return bats.length > 0;
       case "wallbox":
@@ -598,7 +627,7 @@ export class EnergieflussEditor extends LitElement {
   private _clear(topic: Topic): void {
     const d: Options = { ...this._draft };
     const drop = (...keys: string[]) => keys.forEach((k) => delete (d as Record<string, unknown>)[k]);
-    if (topic === "solar") drop("solar_strings", "solar_today", "solar_forecast_remaining");
+    if (topic === "solar") drop("solar_strings", "solar_total", "solar_today", "solar_forecast_remaining");
     if (topic === "battery") drop("batteries");
     if (topic === "wallbox") drop("wallbox_name", "wallbox_power", "wallbox_soc", "wallbox_flexible");
     if (topic === "tariff") drop("grid_price");
@@ -786,7 +815,7 @@ export class EnergieflussEditor extends LitElement {
       <h3>Namen auf der Karte</h3>
       <p class="hint">Leer lassen: der Name aus Home Assistant. Der Sensor selbst wird nicht umbenannt.</p>
       ${loads.map(
-        (e) => html`<div class="name-row">
+        (e) => html`<div class="name-row" data-focus=${`load-${e}`}>
           <label>
             <span>${this._haName(e)}</span>
             <input
@@ -816,7 +845,8 @@ export class EnergieflussEditor extends LitElement {
 
   private _solarLive(): TemplateResult | typeof nothing {
     const strings = this._draft.solar_strings ?? [];
-    if (!strings.length) {
+    const totalSensor = this._draft.solar_total;
+    if (!strings.length && !totalSensor) {
       return html`<div class="live">
         ${this._calcNote(
           this._computed.includes("solar")
@@ -828,7 +858,10 @@ export class EnergieflussEditor extends LitElement {
     const total = strings.reduce((sum, e) => sum + (watts(this._s(e)) ?? 0), 0);
     return html`<div class="live">
       ${strings.map((e) => this._powerLine(this._name(e), e))}
-      <div class="row total"><span>Summe</span><span>${fmtPower(total, this._loc)}</span></div>
+      ${strings.length ? html`<div class="row total"><span>Summe</span><span>${fmtPower(total, this._loc)}</span></div>` : nothing}
+      ${totalSensor
+        ? html`<div class="row total"><span>PV gesamt (Sensor)</span><span>${fmtPower(watts(this._s(totalSensor)), this._loc)}</span></div>`
+        : nothing}
       ${!this._draft.solar_today ? this._calcNote("PV-Ertrag heute zählt die Integration selbst.") : nothing}
     </div>`;
   }
@@ -1109,7 +1142,7 @@ export class EnergieflussEditor extends LitElement {
         ...(d.wallbox_power ? [d.wallbox_power] : []),
         ...(d.batteries ?? []).flatMap((x) => x.backup_loads ?? []),
       ]);
-      const list = (sg.loads ?? []).filter((l) => !used.has(l.entity));
+      const list = (sg.loads ?? []).filter((l) => !used.has(l.entity) && !this._skipped.has(l.entity));
       loads = list.length
         ? html`<h3>Mögliche Verbraucher</h3>
             ${list.map(
@@ -1122,6 +1155,13 @@ export class EnergieflussEditor extends LitElement {
                 <div class="sg-btns">
                   <button @click=${() => this._applyLoad(l.entity, "fixed_loads")}>Grundlast</button>
                   <button @click=${() => this._applyLoad(l.entity, "flexible_loads")}>Zusatzverbraucher</button>
+                  <button
+                    class="skip"
+                    title="Ausblenden – beim nächsten „Sensoren erkennen“ wieder dabei"
+                    @click=${() => (this._skipped = new Set([...this._skipped, l.entity]))}
+                  >
+                    Jetzt nicht
+                  </button>
                 </div>
               </div>`,
             )}`
@@ -1170,7 +1210,7 @@ export class EnergieflussEditor extends LitElement {
     const on = this._isOn(topic);
     const open = on && this._open.has(topic);
     const blocked = false;
-    const inner = html`<div class="section">
+    const inner = html`<div class="section" data-focus=${topic}>
       <div class="head">
         <button class="fold" ?disabled=${!on} @click=${() => this._toggleOpen(topic)} aria-expanded=${open}>
           <span class="chev ${open ? "open" : ""}">›</span>
@@ -1248,7 +1288,7 @@ export class EnergieflussEditor extends LitElement {
         "Batteriespeicher",
         () => html`${batteries.map((b, i) => {
           const data = { mode: "combined", ...b } as Record<string, unknown>;
-          return html`<div class="sub">
+          return html`<div class="sub" data-focus=${`battery-${i}`}>
             <div class="subhead">
               <h3>Batterie ${i + 1}${b.name ? ` – ${b.name}` : ""}</h3>
               <button class="link" @click=${() => this._removeBattery(i)}>Entfernen</button>
@@ -1269,7 +1309,7 @@ export class EnergieflussEditor extends LitElement {
         "Photovoltaik",
         () =>
           html`${this._form(SOLAR_SCHEMA, d as Record<string, unknown>, (ev) =>
-            this._onForm(ev, ["solar_strings", "solar_today", "solar_forecast_remaining"]),
+            this._onForm(ev, ["solar_strings", "solar_total", "solar_today", "solar_forecast_remaining"]),
           )}${this._solarLive()}`,
         "Ein Sensor je Strang (z. B. Dachseite), höchstens 4 – jeder wird ein Feld auf dem Solarmodul.",
         "Hast du Solarpanele?",
@@ -1607,6 +1647,23 @@ export class EnergieflussEditor extends LitElement {
     }
     button.detect {
       margin: 4px 0 12px;
+    }
+    .flash {
+      animation: ef-flash 1.8s ease-out;
+    }
+    @keyframes ef-flash {
+      0%,
+      30% {
+        box-shadow: 0 0 0 3px var(--primary-color, #03a9f4);
+        border-radius: 8px;
+      }
+      100% {
+        box-shadow: 0 0 0 3px transparent;
+        border-radius: 8px;
+      }
+    }
+    .sg-btns .skip {
+      opacity: 0.75;
     }
     .secsave {
       display: flex;

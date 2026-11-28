@@ -45,6 +45,7 @@ from .const import (
     CONF_LOAD_PARENTS,
     CONF_SOLAR_FORECAST,
     CONF_SOLAR_STRINGS,
+    CONF_SOLAR_TOTAL,
     CONF_SOLAR_TODAY,
     CONF_WALLBOX_FLEXIBLE,
     CONF_WALLBOX_NAME,
@@ -82,6 +83,7 @@ BATTERY_SCHEMA = vol.Schema(
 OPTIONS_SCHEMA = vol.Schema(
     {
         vol.Optional(CONF_SOLAR_STRINGS): _ENTITIES,
+        vol.Optional(CONF_SOLAR_TOTAL): _ENTITY,
         vol.Optional(CONF_SOLAR_TODAY): _ENTITY,
         vol.Optional(CONF_SOLAR_FORECAST): _ENTITY,
         vol.Optional(CONF_BATTERIES): vol.All(

@@ -48,6 +48,7 @@ from .const import (
     CONF_HOME_POWER,
     CONF_LOAD_PARENTS,
     CONF_SOLAR_STRINGS,
+    CONF_SOLAR_TOTAL,
     CONF_WALLBOX_FLEXIBLE,
     CONF_WALLBOX_POWER,
     CONF_WALLBOX_SOC,
@@ -107,6 +108,8 @@ class EnergieflussHub:
     def source_entities(self) -> set[str]:
         """All entity ids the calculation depends on."""
         ids: set[str] = set(self.config.get(CONF_SOLAR_STRINGS) or [])
+        if self.config.get(CONF_SOLAR_TOTAL):
+            ids.add(self.config[CONF_SOLAR_TOTAL])
         ids.update(self.config.get(CONF_FIXED_LOADS) or [])
         ids.update(self.config.get(CONF_FLEXIBLE_LOADS) or [])
         ids.update(self.backup_loads())
@@ -215,6 +218,8 @@ class EnergieflussHub:
             grid_configured = bool(cfg.get(CONF_GRID_POWER))
         return Inputs(
             solar_strings=[self._watts(e) for e in cfg.get(CONF_SOLAR_STRINGS) or []],
+            solar_total=self._watts(cfg.get(CONF_SOLAR_TOTAL)),
+            solar_total_configured=bool(cfg.get(CONF_SOLAR_TOTAL)),
             batteries=[self._battery(b) for b in self.batteries],
             grid_power=self._watts(cfg.get(CONF_GRID_POWER)),
             grid_invert=bool(cfg.get(CONF_GRID_INVERT)),

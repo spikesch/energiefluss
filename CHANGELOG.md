@@ -2,6 +2,20 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.6.0
+
+**Deutsch**
+
+- Klick auf ein Feld der Grafik, während die Einstellungen offen sind: der passende Abschnitt klappt auf, scrollt ins Bild und das Feld leuchtet kurz auf – PV-Strang, PV gesamt, Batterie, Netz, Wallbox, Hausverbrauch, jeder Verbraucher. Bei Verbrauchern steht der Cursor gleich im Namensfeld. Außerhalb der Einstellungen zeigt ein Klick wie bisher den Sensor.
+- Photovoltaik: optional **PV-Gesamtleistung** – ein eigener Sensor (z. B. vom Wechselrichter) statt der Summe der Stränge. Er gilt für „PV gesamt“, die Energiebilanz und den PV-Ertrag heute; die Stränge bleiben einzeln auf dem Modul.
+- Gefundene Verbraucher haben einen dritten Knopf **Jetzt nicht**: ausgeblendet bis zum nächsten *Sensoren erkennen*.
+
+**English**
+
+- Click a field of the graphic while the settings are open: the matching section opens, scrolls into view and the field lights up briefly – PV string, PV total, battery, grid, wallbox, house consumption, every load. For loads the cursor is already in the name field. Outside the settings a click shows the sensor as before.
+- Solar: optional **PV-Gesamtleistung** (total PV power) – a sensor of its own (e.g. from the inverter) instead of the sum of the strings. It is used for "PV gesamt", the energy balance and today's PV yield; the strings stay on the panel one by one.
+- Suggested loads get a third button **Jetzt nicht** (not now): hidden until the next *Sensoren erkennen*.
+
 ## 0.5.0
 
 **Deutsch**

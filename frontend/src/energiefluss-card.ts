@@ -10,6 +10,7 @@ import {
 } from "lit";
 import { property, state } from "lit/decorators.js";
 import { UPDATED_EVENT } from "./editor-core";
+import { EDIT_EVENT, editTarget } from "./edit-target";
 import "./card-editor";
 import {
   batterySlots,
@@ -167,6 +168,8 @@ const ICON_SOLAR =
 
 export class EnergieflussCard extends LitElement {
   @property({ attribute: false }) hass?: Hass;
+  /** Set by the Wattrio page while its settings are open: a click edits the field. */
+  @property({ type: Boolean }) editMode = false;
   @state() protected _config?: CardConfig;
   @state() protected _layout?: Layout;
   @state() protected _error?: string;
@@ -312,6 +315,11 @@ export class EnergieflussCard extends LitElement {
     const hit = ev.composedPath().find((e): e is Element => e instanceof Element && e.hasAttribute("data-entity"));
     const entityId = hit?.getAttribute("data-entity");
     if (!entityId) return;
+    const target = this.editMode && this._layout ? editTarget(this._layout, entityId) : undefined;
+    if (target) {
+      this.dispatchEvent(new CustomEvent(EDIT_EVENT, { detail: target, bubbles: true, composed: true }));
+      return;
+    }
     this.dispatchEvent(new CustomEvent("hass-more-info", { detail: { entityId }, bubbles: true, composed: true }));
   };
 

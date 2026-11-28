@@ -82,6 +82,9 @@ class Inputs:
     """
 
     solar_strings: list[float | None] = field(default_factory=list)
+    # whole PV power from one sensor; when configured it replaces the strings' sum
+    solar_total: float | None = None
+    solar_total_configured: bool = False
     batteries: list[BatteryInput] = field(default_factory=list)
     grid_power: float | None = None
     grid_invert: bool = False
@@ -178,14 +181,17 @@ def compute(inp: Inputs) -> Result:
     battery without power sensor can be computed instead.
     """
     computed: set[str] = set()
-    solar_cfg = bool(inp.solar_strings)
+    solar_cfg = bool(inp.solar_strings) or inp.solar_total_configured
     if inp.grid_configured is not None:
         grid_cfg = inp.grid_configured
     else:
         grid_cfg = any(v is not None for v in (inp.grid_power, inp.grid_import_power, inp.grid_export_power))
     home_cfg = inp.home_configured if inp.home_configured is not None else inp.home_measured is not None
 
-    solar = _sum(inp.solar_strings) if solar_cfg else None
+    if inp.solar_total_configured:
+        solar = inp.solar_total
+    else:
+        solar = _sum(inp.solar_strings) if solar_cfg else None
     if solar is not None:
         solar = max(solar, 0.0)
     grid = _grid(inp) if grid_cfg else None

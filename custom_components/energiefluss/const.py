@@ -9,6 +9,8 @@ MAX_BACKUP_BATTERIES = 2  # batteries with their own backup output
 
 # Config keys (stored in entry.options)
 CONF_SOLAR_STRINGS = "solar_strings"
+# optional: one sensor with the whole PV power, used instead of the strings' sum
+CONF_SOLAR_TOTAL = "solar_total"
 CONF_SOLAR_TODAY = "solar_today"
 CONF_SOLAR_FORECAST = "solar_forecast_remaining"
 

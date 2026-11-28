@@ -10,10 +10,12 @@ import { LitElement, css, html, nothing, type PropertyValues } from "lit";
 import { property, state } from "lit/decorators.js";
 import { guideOpen, UPDATED_EVENT, type Hass, type Instance } from "./editor-core";
 import "./editor-core";
+import { EDIT_EVENT, type EditTarget } from "./edit-target";
 import "./cards";
 
 interface CardElement extends HTMLElement {
   hass?: Hass;
+  editMode?: boolean;
   setConfig(config: Record<string, unknown>): void;
 }
 
@@ -33,7 +35,7 @@ function configured(o: Record<string, unknown>): boolean {
     const v = o[k];
     return Array.isArray(v) ? v.length > 0 : !!v;
   };
-  return ["solar_strings", "grid_power", "grid_import_power", "grid_export_power", "batteries", "home_power"].some(filled);
+  return ["solar_strings", "solar_total", "grid_power", "grid_import_power", "grid_export_power", "batteries", "home_power"].some(filled);
 }
 
 export class EnergieflussPanel extends LitElement {
@@ -56,13 +58,23 @@ export class EnergieflussPanel extends LitElement {
     if (id && id === this._entryId) void this._select(id, false);
   };
 
+  // settings mode: a click on a field of the card opens it in the settings
+  private _onEdit = (ev: Event): void => {
+    const editor = this.renderRoot.querySelector("energiefluss-editor") as (Element & {
+      focusTarget?: (t: EditTarget) => Promise<void>;
+    }) | null;
+    void editor?.focusTarget?.((ev as CustomEvent<EditTarget>).detail);
+  };
+
   connectedCallback(): void {
     super.connectedCallback();
     window.addEventListener(UPDATED_EVENT, this._onUpdated);
+    this.addEventListener(EDIT_EVENT, this._onEdit);
   }
 
   disconnectedCallback(): void {
     window.removeEventListener(UPDATED_EVENT, this._onUpdated);
+    this.removeEventListener(EDIT_EVENT, this._onEdit);
     super.disconnectedCallback();
   }
 
@@ -103,6 +115,7 @@ export class EnergieflussPanel extends LitElement {
     } else if (changed.has("hass") && this._card) {
       this._card.hass = this.hass;
     }
+    if (this._card) this._card.editMode = this._view === "settings";
   }
 
   private async _mountCard(host: Element, entryId: string, look: Look): Promise<void> {
@@ -111,6 +124,7 @@ export class EnergieflussPanel extends LitElement {
     const card = document.createElement(tag) as CardElement;
     card.setConfig({ type: `custom:${tag}`, entry_id: entryId });
     card.hass = this.hass;
+    card.editMode = this._view === "settings";
     host.replaceChildren(card);
     this._card = card;
   }
@@ -148,7 +162,10 @@ export class EnergieflussPanel extends LitElement {
     return html`
       ${toolbar}
       <div class="content ${this.narrow ? "narrow" : ""}">
-        <div class="preview-col"><div id="card"></div></div>
+        <div class="preview-col">
+          <div id="card"></div>
+          <p class="tip">Tipp: Klick auf ein Feld der Grafik öffnet rechts seine Einstellung.</p>
+        </div>
         <energiefluss-editor .hass=${this.hass} .entryId=${this._entryId}></energiefluss-editor>
       </div>
     `;
@@ -244,6 +261,11 @@ export class EnergieflussPanel extends LitElement {
     .content.narrow {
       grid-template-columns: minmax(0, 1fr);
       padding: 8px;
+    }
+    .tip {
+      margin: 6px 4px 0;
+      font-size: 0.85em;
+      color: var(--secondary-text-color);
     }
     .preview-col {
       position: sticky;

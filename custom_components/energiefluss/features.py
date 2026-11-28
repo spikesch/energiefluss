@@ -18,6 +18,7 @@ from .const import (
     CONF_GRID_POWER,
     CONF_HOME_POWER,
     CONF_SOLAR_STRINGS,
+    CONF_SOLAR_TOTAL,
     CONF_WALLBOX_POWER,
 )
 
@@ -29,7 +30,7 @@ def _parts(cfg: dict[str, Any]) -> dict[str, bool]:
     flexible = bool(cfg.get(CONF_FLEXIBLE_LOADS))
     wallbox = bool(cfg.get(CONF_WALLBOX_POWER))
     return {
-        "solar": bool(cfg.get(CONF_SOLAR_STRINGS)),
+        "solar": bool(cfg.get(CONF_SOLAR_STRINGS) or cfg.get(CONF_SOLAR_TOTAL)),
         "grid": bool(cfg.get(CONF_GRID_POWER) or cfg.get(CONF_GRID_IMPORT_POWER) or cfg.get(CONF_GRID_EXPORT_POWER)),
         "battery": bool(batteries),
         "backup": backup,

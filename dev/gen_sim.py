@@ -26,6 +26,9 @@ SIMS = [
     # 4th battery: one slider, exposed only as split charge/discharge sensors
     ("bat4_power", "Speicher 4 (Laden +)", -2000, 2000, 10, "W", 300, "hidden", "bat"),
     ("bat4_soc", "Speicher 4 SoC", 0, 100, 1, "%", 60, "battery", None),
+    # 5th battery: the most the integration takes (screenshots show a full system)
+    ("bat5_power", "Garage Leistung", -2500, 2500, 10, "W", -400, "power", "bat"),
+    ("bat5_soc", "Garage SoC", 0, 100, 1, "%", 72, "battery", None),
     ("grundlast", "Grundlast (nicht gemessen)", 0, 1500, 10, "W", 250, "power", "load"),
     ("load_vava", "Vava", 0, 1500, 5, "W", 0, "power", "load"),
     ("load_tv", "TV", 0, 400, 5, "W", 95, "power", "load"),

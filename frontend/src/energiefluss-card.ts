@@ -1147,7 +1147,8 @@ export class EnergieflussCard extends LitElement {
       return v === null ? sum : (sum ?? 0) + v;
     }, null);
     return svg`
-      <text x=${BRACKET_X} y=${y} class="small grp" fill=${colour}>${title}</text>
+      <text x=${BRACKET_X} y=${y} class="small grp" fill=${colour}
+        >${shortName(title, 15)}${title.length > 15 ? svg`<title>${title}</title>` : nothing}</text>
       <text x=${LOAD_XP - LOAD_PW / 2} y=${y} text-anchor="middle" class="small grp" fill=${colour}>${fmtPower(power, this._loc)}</text>
       <text x=${LOAD_X1 - LOAD_EW / 2} y=${y} text-anchor="middle" class="small grp" fill=${colour}>${fmtEnergy(today, this._loc)}</text>`;
   }
@@ -1252,7 +1253,7 @@ export class EnergieflussCard extends LitElement {
       ${this._tap(this._layout!.entities.grid_power, svg`${this._panel(10, 192, 74, 40, c)}
         <text x="47" y=${cents === null ? 217 : 209} text-anchor="middle" class="val" font-size=${this._fs(13)}>${power}</text>`)}
       ${cents !== null
-        ? svg`<text x="47" y="225" text-anchor="middle" class="tiny" fill=${this._priceColour(exporting)}>${fmtCents(cents, this._loc)}</text>`
+        ? svg`<text x="47" y="225" text-anchor="middle" class="tiny" style=${`fill:${this._priceColour(exporting)}`}>${fmtCents(cents, this._loc)}</text>`
         : nothing}
       <text x="90" y="207" class="tiny">${label}</text>
       ${this._icon(ICON_TOWER, 27, 240, 40, c)}

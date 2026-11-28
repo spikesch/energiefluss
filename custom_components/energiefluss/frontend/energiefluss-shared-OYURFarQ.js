@@ -45,7 +45,7 @@ const Ss = (a) => new ds(typeof a == "string" ? a : a + "", void 0, xe), te = (a
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const { is: Es, defineProperty: Ls, getOwnPropertyDescriptor: zs, getOwnPropertyNames: Hs, getOwnPropertySymbols: Cs, getPrototypeOf: Ps } = Object, ee = globalThis, Be = ee.trustedTypes, Ts = Be ? Be.emptyScript : "", Bs = ee.reactiveElementPolyfillSupport, At = (a, t) => a, qt = { toAttribute(a, t) {
+const { is: Es, defineProperty: Ls, getOwnPropertyDescriptor: zs, getOwnPropertyNames: Hs, getOwnPropertySymbols: Cs, getPrototypeOf: Ps } = Object, ee = globalThis, Be = ee.trustedTypes, Ts = Be ? Be.emptyScript : "", Bs = ee.reactiveElementPolyfillSupport, Et = (a, t) => a, qt = { toAttribute(a, t) {
   switch (t) {
     case Boolean:
       a = a ? Ts : null;
@@ -103,13 +103,13 @@ let mt = class extends HTMLElement {
     return this.elementProperties.get(t) ?? Oe;
   }
   static _$Ei() {
-    if (this.hasOwnProperty(At("elementProperties"))) return;
+    if (this.hasOwnProperty(Et("elementProperties"))) return;
     const t = Ps(this);
     t.finalize(), t.l !== void 0 && (this.l = [...t.l]), this.elementProperties = new Map(t.elementProperties);
   }
   static finalize() {
-    if (this.hasOwnProperty(At("finalized"))) return;
-    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(At("properties"))) {
+    if (this.hasOwnProperty(Et("finalized"))) return;
+    if (this.finalized = !0, this._$Ei(), this.hasOwnProperty(Et("properties"))) {
       const e = this.properties, s = [...Hs(e), ...Cs(e)];
       for (const n of s) this.createProperty(n, e[n]);
     }
@@ -256,28 +256,28 @@ let mt = class extends HTMLElement {
   firstUpdated(t) {
   }
 };
-mt.elementStyles = [], mt.shadowRootOptions = { mode: "open" }, mt[At("elementProperties")] = /* @__PURE__ */ new Map(), mt[At("finalized")] = /* @__PURE__ */ new Map(), Bs?.({ ReactiveElement: mt }), (ee.reactiveElementVersions ??= []).push("2.1.2");
+mt.elementStyles = [], mt.shadowRootOptions = { mode: "open" }, mt[Et("elementProperties")] = /* @__PURE__ */ new Map(), mt[Et("finalized")] = /* @__PURE__ */ new Map(), Bs?.({ ReactiveElement: mt }), (ee.reactiveElementVersions ??= []).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
 const ke = globalThis, Ne = (a) => a, Zt = ke.trustedTypes, Ie = Zt ? Zt.createPolicy("lit-html", { createHTML: (a) => a }) : void 0, ps = "$lit$", ot = `lit$${Math.random().toFixed(9).slice(2)}$`, us = "?" + ot, Os = `<${us}>`, pt = document, zt = () => pt.createComment(""), Ht = (a) => a === null || typeof a != "object" && typeof a != "function", Me = Array.isArray, Ns = (a) => Me(a) || typeof a?.[Symbol.iterator] == "function", ie = `[ 	
-\f\r]`, vt = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, Re = /-->/g, Fe = />/g, lt = RegExp(`>|${ie}(?:([^\\s"'>=/]+)(${ie}*=${ie}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`, "g"), Ve = /'/g, We = /"/g, _s = /^(?:script|style|textarea|title)$/i, fs = (a) => (t, ...e) => ({ _$litType$: a, strings: t, values: e }), m = fs(1), _ = fs(2), yt = Symbol.for("lit-noChange"), f = Symbol.for("lit-nothing"), Ue = /* @__PURE__ */ new WeakMap(), ct = pt.createTreeWalker(pt, 129);
+\f\r]`, kt = /<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g, Re = /-->/g, Fe = />/g, lt = RegExp(`>|${ie}(?:([^\\s"'>=/]+)(${ie}*=${ie}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`, "g"), Ve = /'/g, We = /"/g, _s = /^(?:script|style|textarea|title)$/i, fs = (a) => (t, ...e) => ({ _$litType$: a, strings: t, values: e }), m = fs(1), _ = fs(2), wt = Symbol.for("lit-noChange"), f = Symbol.for("lit-nothing"), Ue = /* @__PURE__ */ new WeakMap(), ct = pt.createTreeWalker(pt, 129);
 function gs(a, t) {
   if (!Me(a) || !a.hasOwnProperty("raw")) throw Error("invalid template strings array");
   return Ie !== void 0 ? Ie.createHTML(t) : t;
 }
 const Is = (a, t) => {
   const e = a.length - 1, s = [];
-  let n, i = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = vt;
+  let n, i = t === 2 ? "<svg>" : t === 3 ? "<math>" : "", o = kt;
   for (let l = 0; l < e; l++) {
     const r = a[l];
     let c, h, d = -1, $ = 0;
-    for (; $ < r.length && (o.lastIndex = $, h = o.exec(r), h !== null); ) $ = o.lastIndex, o === vt ? h[1] === "!--" ? o = Re : h[1] !== void 0 ? o = Fe : h[2] !== void 0 ? (_s.test(h[2]) && (n = RegExp("</" + h[2], "g")), o = lt) : h[3] !== void 0 && (o = lt) : o === lt ? h[0] === ">" ? (o = n ?? vt, d = -1) : h[1] === void 0 ? d = -2 : (d = o.lastIndex - h[2].length, c = h[1], o = h[3] === void 0 ? lt : h[3] === '"' ? We : Ve) : o === We || o === Ve ? o = lt : o === Re || o === Fe ? o = vt : (o = lt, n = void 0);
+    for (; $ < r.length && (o.lastIndex = $, h = o.exec(r), h !== null); ) $ = o.lastIndex, o === kt ? h[1] === "!--" ? o = Re : h[1] !== void 0 ? o = Fe : h[2] !== void 0 ? (_s.test(h[2]) && (n = RegExp("</" + h[2], "g")), o = lt) : h[3] !== void 0 && (o = lt) : o === lt ? h[0] === ">" ? (o = n ?? kt, d = -1) : h[1] === void 0 ? d = -2 : (d = o.lastIndex - h[2].length, c = h[1], o = h[3] === void 0 ? lt : h[3] === '"' ? We : Ve) : o === We || o === Ve ? o = lt : o === Re || o === Fe ? o = kt : (o = lt, n = void 0);
     const u = o === lt && a[l + 1].startsWith("/>") ? " " : "";
-    i += o === vt ? r + Os : d >= 0 ? (s.push(c), r.slice(0, d) + ps + r.slice(d) + ot + u) : r + ot + (d === -2 ? l : u);
+    i += o === kt ? r + Os : d >= 0 ? (s.push(c), r.slice(0, d) + ps + r.slice(d) + ot + u) : r + ot + (d === -2 ? l : u);
   }
   return [gs(a, i + (a[e] || "<?>") + (t === 2 ? "</svg>" : t === 3 ? "</math>" : "")), s];
 };
@@ -318,11 +318,11 @@ class Ct {
     return s.innerHTML = t, s;
   }
 }
-function wt(a, t, e = a, s) {
-  if (t === yt) return t;
+function xt(a, t, e = a, s) {
+  if (t === wt) return t;
   let n = s !== void 0 ? e._$Co?.[s] : e._$Cl;
   const i = Ht(t) ? void 0 : t._$litDirective$;
-  return n?.constructor !== i && (n?._$AO?.(!1), i === void 0 ? n = void 0 : (n = new i(a), n._$AT(a, e, s)), s !== void 0 ? (e._$Co ??= [])[s] = n : e._$Cl = n), n !== void 0 && (t = wt(a, n._$AS(a, t.values), n, s)), t;
+  return n?.constructor !== i && (n?._$AO?.(!1), i === void 0 ? n = void 0 : (n = new i(a), n._$AT(a, e, s)), s !== void 0 ? (e._$Co ??= [])[s] = n : e._$Cl = n), n !== void 0 && (t = xt(a, n._$AS(a, t.values), n, s)), t;
 }
 class Rs {
   constructor(t, e) {
@@ -371,7 +371,7 @@ class Tt {
     return this._$AB;
   }
   _$AI(t, e = this) {
-    t = wt(this, t, e), Ht(t) ? t === f || t == null || t === "" ? (this._$AH !== f && this._$AR(), this._$AH = f) : t !== this._$AH && t !== yt && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Ns(t) ? this.k(t) : this._(t);
+    t = xt(this, t, e), Ht(t) ? t === f || t == null || t === "" ? (this._$AH !== f && this._$AR(), this._$AH = f) : t !== this._$AH && t !== wt && this._(t) : t._$litType$ !== void 0 ? this.$(t) : t.nodeType !== void 0 ? this.T(t) : Ns(t) ? this.k(t) : this._(t);
   }
   O(t) {
     return this._$AA.parentNode.insertBefore(t, this._$AB);
@@ -424,11 +424,11 @@ class se {
   _$AI(t, e = this, s, n) {
     const i = this.strings;
     let o = !1;
-    if (i === void 0) t = wt(this, t, e, 0), o = !Ht(t) || t !== this._$AH && t !== yt, o && (this._$AH = t);
+    if (i === void 0) t = xt(this, t, e, 0), o = !Ht(t) || t !== this._$AH && t !== wt, o && (this._$AH = t);
     else {
       const l = t;
       let r, c;
-      for (t = i[0], r = 0; r < i.length - 1; r++) c = wt(this, l[s + r], e, r), c === yt && (c = this._$AH[r]), o ||= !Ht(c) || c !== this._$AH[r], c === f ? t = f : t !== f && (t += (c ?? "") + i[r + 1]), this._$AH[r] = c;
+      for (t = i[0], r = 0; r < i.length - 1; r++) c = xt(this, l[s + r], e, r), c === wt && (c = this._$AH[r]), o ||= !Ht(c) || c !== this._$AH[r], c === f ? t = f : t !== f && (t += (c ?? "") + i[r + 1]), this._$AH[r] = c;
     }
     o && !n && this.j(t);
   }
@@ -457,7 +457,7 @@ class Ws extends se {
     super(t, e, s, n, i), this.type = 5;
   }
   _$AI(t, e = this) {
-    if ((t = wt(this, t, e, 0) ?? f) === yt) return;
+    if ((t = xt(this, t, e, 0) ?? f) === wt) return;
     const s = this._$AH, n = t === f && s !== f || t.capture !== s.capture || t.once !== s.once || t.passive !== s.passive, i = t !== f && (s === f || n);
     n && this.element.removeEventListener(this.name, this, s), i && this.element.addEventListener(this.name, this, t), this._$AH = t;
   }
@@ -473,7 +473,7 @@ class Us {
     return this._$AM._$AU;
   }
   _$AI(t) {
-    wt(this, t);
+    xt(this, t);
   }
 }
 const js = ke.litHtmlPolyfillSupport;
@@ -512,7 +512,7 @@ let ht = class extends mt {
     super.disconnectedCallback(), this._$Do?.setConnected(!1);
   }
   render() {
-    return yt;
+    return wt;
   }
 };
 ht._$litElement$ = !0, ht.finalized = !0, Se.litElementHydrateSupport?.({ LitElement: ht });
@@ -583,7 +583,7 @@ function L(a, t = "de") {
 function W(a, t = "de") {
   return a === null ? "–" : `${a.toLocaleString(t, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kWh`;
 }
-function Et(a, t = "de") {
+function Lt(a, t = "de") {
   return a === null ? "–" : `${Math.round(a).toLocaleString(t)} %`;
 }
 function Ks(a, t) {
@@ -592,7 +592,7 @@ function Ks(a, t) {
 function Js(a, t) {
   return a === null ? 1 : +(1 + 3 * Math.min(Math.abs(a) / Math.max(t, 1), 1)).toFixed(2);
 }
-function Lt(a, t = 9) {
+function bt(a, t = 9) {
   return a.length > t ? a.slice(0, t - 1) + "…" : a;
 }
 function pe(a) {
@@ -2121,7 +2121,7 @@ ne([
   z()
 ], ut.prototype, "_ready");
 customElements.get("energiefluss-card-editor") || customElements.define("energiefluss-card-editor", ut);
-var An = Object.defineProperty, xt = (a, t, e, s) => {
+var An = Object.defineProperty, vt = (a, t, e, s) => {
   for (var n = void 0, i = a.length - 1, o; i >= 0; i--)
     (o = a[i]) && (n = o(t, e, n) || n);
   return n && An(t, e, n), n;
@@ -2479,7 +2479,7 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
   /** One PV string: value box with its name below (tile at x, y; 60 x 38 available). */
   _stringTile(t, e, s, n) {
     return _`${this._box(t, e, 60, 24, n, L(this._w(s), this._loc), 11)}
-      <text x=${t} y=${e + 35} class="lbl">${Lt(this._name(s), 14)}</text>`;
+      <text x=${t} y=${e + 35} class="lbl">${bt(this._name(s), 14)}</text>`;
   }
   /** Batteries in display order: those with a backup output go to the right. */
   _displayBatteries() {
@@ -2513,7 +2513,7 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
       Xt,
       e,
       [
-        `${h >= 120 ? "Speicher " : ""}${Et(s, this._loc)}`,
+        `${h >= 120 ? "Speicher " : ""}${Lt(s, this._loc)}`,
         n !== null && h >= 80 ? W(n, this._loc) : "",
         // what all batteries together take in or give out right now
         r !== null && Math.abs(r) >= O && h >= 110 ? `${h >= 200 ? r > 0 ? "lädt " : "entlädt " : r > 0 ? "+" : "−"}${L(Math.abs(r), this._loc)}` : ""
@@ -2531,8 +2531,8 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
       <rect x=${e - 9} y=${s + 42} width="18" height="32" rx="3" fill="none" stroke=${r} />
       <rect x=${e - 4} y=${s + 39} width="8" height="3" fill=${r} />
       <rect x=${e - 7} y=${s + 72 - 28 * d / 100} width="14" height=${28 * d / 100} rx="1" fill=${r} fill-opacity="0.7" />
-      <text x=${e} y=${s + 91} text-anchor="middle" class="soc">${Et(o, this._loc)}</text>
-      <text x=${e} y=${s + 104} text-anchor="middle" class="tiny">${Lt(t, h ? 10 : 14)}</text>
+      <text x=${e} y=${s + 91} text-anchor="middle" class="soc">${Lt(o, this._loc)}</text>
+      <text x=${e} y=${s + 104} text-anchor="middle" class="tiny">${bt(t, h ? 10 : 14)}</text>
     `;
   }
   _inverter() {
@@ -2611,7 +2611,7 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
     );
     const u = t.wallbox;
     if (u && this._wallboxInList) {
-      const g = C(this._s(u.soc ?? void 0)), v = g !== null ? `${u.name} Auto ${Et(g, this._loc)}` : u.name;
+      const g = C(this._s(u.soc ?? void 0)), v = g !== null ? `${u.name} Auto ${Lt(g, this._loc)}` : u.name;
       r(
         "Wallbox",
         u.flexible ? e.flexible : e.home,
@@ -2629,7 +2629,7 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
       r(
         // red colour + feed line from the battery mark it as backup; with two
         // backup batteries the name tells them apart
-        b.length > 1 ? `Notstrom – ${Lt(g.name, 10)}` : "Notstrom",
+        b.length > 1 ? `Notstrom – ${bt(g.name, 10)}` : "Notstrom",
         e.backup,
         g.backup ?? [],
         this._sumW(g.backup ?? []),
@@ -2799,7 +2799,8 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
       return c === null ? l : (l ?? 0) + c;
     }, null);
     return _`
-      <text x=${nt} y=${t} class="small grp" fill=${e}>${s}</text>
+      <text x=${nt} y=${t} class="small grp" fill=${e}
+        >${bt(s, 15)}${s.length > 15 ? _`<title>${s}</title>` : f}</text>
       <text x=${rt - st / 2} y=${t} text-anchor="middle" class="small grp" fill=${e}>${L(n, this._loc)}</text>
       <text x=${tt - it / 2} y=${t} text-anchor="middle" class="small grp" fill=${e}>${W(o, this._loc)}</text>`;
   }
@@ -2869,7 +2870,7 @@ const En = (a) => a.reduce((t, e) => t + 1 + (e.children?.length ?? 0), 0), Ln =
       ${this._flow(`M ${this._invX} ${this._invY + 42} H 84`, t, e, s)}
       ${this._tap(this._layout.entities.grid_power, _`${this._panel(10, 192, 74, 40, t)}
         <text x="47" y=${n === null ? 217 : 209} text-anchor="middle" class="val" font-size=${this._fs(13)}>${o}</text>`)}
-      ${n !== null ? _`<text x="47" y="225" text-anchor="middle" class="tiny" fill=${this._priceColour(s)}>${Ae(n, this._loc)}</text>` : f}
+      ${n !== null ? _`<text x="47" y="225" text-anchor="middle" class="tiny" style=${`fill:${this._priceColour(s)}`}>${Ae(n, this._loc)}</text>` : f}
       <text x="90" y="207" class="tiny">${i}</text>
       ${this._icon(Nn, 27, 240, 40, t)}
       ${l !== null ? _`<text x="10" y="292" class="small" fill=${t}>↓ ${W(l, this._loc)}<tspan class="tiny"> Bezug</tspan></text>` : f}
@@ -2949,22 +2950,22 @@ ze.styles = te`
     }
   `;
 let Z = ze;
-xt([
+vt([
   _t({ attribute: !1 })
 ], Z.prototype, "hass");
-xt([
+vt([
   _t({ type: Boolean })
 ], Z.prototype, "editMode");
-xt([
+vt([
   z()
 ], Z.prototype, "_config");
-xt([
+vt([
   z()
 ], Z.prototype, "_layout");
-xt([
+vt([
   z()
 ], Z.prototype, "_error");
-xt([
+vt([
   z()
 ], Z.prototype, "_expanded");
 customElements.get("energiefluss-card") || customElements.define("energiefluss-card", Z);
@@ -3483,7 +3484,7 @@ const Y = {
   top: [115.7, 23.5],
   bottom: [100.2, 221.8],
   left: [[18.7, 61], [18.7, 99.1], [18.7, 138.1]]
-}, bt = {
+}, yt = {
   file: "solar-glass.png",
   width: 360,
   height: 222,
@@ -3504,7 +3505,7 @@ const Y = {
   [1.6, 2.4, -1.8, -1.2],
   [-1.2, -1, 2, 1.4],
   [0.8, 2.2, -2.4, 0.4]
-], It = 26, bi = 2.5, yi = 0.7, Rt = 72, wi = 0.6, xi = 0.7, ys = 5.2, vi = 3.3, ki = 1.6, ss = { big: ys, medium: vi, small: ki }, ws = 6, xs = 0, vs = 130, fe = vs / bt.width, Mi = import.meta.url.replace(/[^/]*$/, "") + bt.file, ns = 0, Ft = 3.5, ae = 44, le = 18, ks = bt.face.map(([a, t]) => [ws + a * fe, xs + t * fe]), kt = (a, t) => {
+], It = 26, bi = 2.5, yi = 0.7, Rt = 72, wi = 0.6, xi = 0.7, ys = 5.2, vi = 3.3, ki = 1.6, ss = { big: ys, medium: vi, small: ki }, ws = 6, xs = 0, vs = 130, fe = vs / yt.width, Mi = import.meta.url.replace(/[^/]*$/, "") + yt.file, ns = 0, Ft = 3.5, ae = 44, le = 18, ks = yt.face.map(([a, t]) => [ws + a * fe, xs + t * fe]), Mt = (a, t) => {
   const [e, s, n, i] = ks, o = [e[0] + (s[0] - e[0]) * a, e[1] + (s[1] - e[1]) * a], l = [i[0] + (n[0] - i[0]) * a, i[1] + (n[1] - i[1]) * a];
   return [o[0] + (l[0] - o[0]) * t, o[1] + (l[1] - o[1]) * t];
 }, Si = (a) => {
@@ -3514,12 +3515,12 @@ const Y = {
   ], d = a === 1 ? [[o, 1 - o]] : h(o, r);
   return (a <= 2 ? [[l, 1 - l]] : h(l, c)).flatMap(
     ([u, b]) => d.map(([g, v]) => ({
-      corners: [kt(g, u), kt(v, u), kt(v, b), kt(g, b)],
-      middle: kt((g + v) / 2, (u + b) / 2),
+      corners: [Mt(g, u), Mt(v, u), Mt(v, b), Mt(g, b)],
+      middle: Mt((g + v) / 2, (u + b) / 2),
       size: [(v - g) * n, (b - u) * i]
     }))
   );
-}, ge = 82, Mt = [104, ge + 26], $e = 58, Vt = [250, $e + 26], me = 196, Wt = me, is = "0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1", ce = (a, t = 0, e = 0) => a.map(([s, n, i, o]) => `M ${s + t} ${n + e} L ${i + t} ${o + e}`).join(" "), os = [
+}, ge = 82, St = [104, ge + 26], $e = 58, Vt = [250, $e + 26], me = 196, Wt = me, is = "0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1", ce = (a, t = 0, e = 0) => a.map(([s, n, i, o]) => `M ${s + t} ${n + e} L ${i + t} ${o + e}`).join(" "), os = [
   [22, 40, 8, 86],
   [34, 40, 48, 86],
   [24, 10, 22, 40],
@@ -3560,7 +3561,7 @@ const Y = {
   [50, 24],
   [2, 36],
   [54, 36]
-], as = 10, ls = 122, de = 0.7, $t = 8, Ut = 48, cs = 1.25, St = 15, hs = 196, Jt = 0.24, Qt = [250, 116], Li = import.meta.url.replace(/[^/]*$/, "") + dt.file, be = ([a, t]) => [
+], as = 10, ls = 122, de = 0.7, $t = 8, Ut = 48, cs = 1.25, At = 15, hs = 196, Jt = 0.24, Qt = [250, 116], Li = import.meta.url.replace(/[^/]*$/, "") + dt.file, be = ([a, t]) => [
   Qt[0] + (a - dt.top[0]) * Jt,
   Qt[1] + (t - dt.top[1]) * Jt
 ], jt = dt.left.map(be), Dt = 6, Gt = 132, zi = import.meta.url.replace(/[^/]*$/, "") + Y.file, Hi = [
@@ -3846,8 +3847,8 @@ const Y = {
   _trainDots(t, e, s) {
     const n = (u) => t === "battery" && !u ? this._c.battery : e, i = (u, b, g) => t === "battery" && g ? this._mixedTrain(u, b) : this._dot(u, n(g), b, g), o = s.map((u) => i(u.route, u.w, u.forward));
     if (t === "pv") {
-      const u = `M ${Mt[0]} ${Mt[1]} V ${this._solarY} H ${this._invX}`, b = this._own("solar_power"), g = s.flatMap((v) => this._arrivals(v.route, v.w));
-      return _`${o}${this._dot(u, e, b, !0)}${this._blob(Mt, e, b, g)}`;
+      const u = `M ${St[0]} ${St[1]} V ${this._solarY} H ${this._invX}`, b = this._own("solar_power"), g = s.flatMap((v) => this._arrivals(v.route, v.w));
+      return _`${o}${this._dot(u, e, b, !0)}${this._blob(St, e, b, g)}`;
     }
     const l = s.reduce((u, b) => b.w === null ? u : (u ?? 0) + b.w, null), [r, c] = this._invBottom, h = `M ${r.toFixed(1)} ${c.toFixed(1)} V ${Wt}`, d = (l ?? 0) > 0, $ = [
       ...d ? this._arrivals(h, l) : [],
@@ -3933,7 +3934,7 @@ const Y = {
   /** The glass solar panel picture below the string labels. */
   _solarBack() {
     return _`<image href=${Mi} x=${ws} y=${xs} width=${vs}
-      height=${(bt.height * fe).toFixed(1)} />`;
+      height=${(yt.height * fe).toFixed(1)} />`;
   }
   /** One PV string: a glass label filling its part of the panel, lying in the
    *  panel's plane, with the same gap to the frame and to its neighbours. A single
@@ -3941,7 +3942,7 @@ const Y = {
   _stringTile(t, e, s, n) {
     const i = t + ae / 2, o = e + le / 2, l = this._labels, r = l.length === 1, h = l.reduce(
       (w, k) => Math.hypot(k.middle[0] - i, k.middle[1] - o) < Math.hypot(w.middle[0] - i, w.middle[1] - o) ? k : w
-    ).corners.map(([w, k]) => `${w.toFixed(1)},${k.toFixed(1)}`).join(" "), [d, $] = bt.across, [u, b] = bt.down, g = l.length === 1 ? 17 : l.length === 2 ? 14 : 12, v = l.length === 1 ? 9 : l.length === 2 ? 8 : 7.5, x = g * 0.35;
+    ).corners.map(([w, k]) => `${w.toFixed(1)},${k.toFixed(1)}`).join(" "), [d, $] = yt.across, [u, b] = yt.down, g = l.length === 1 ? 17 : l.length === 2 ? 14 : 12, v = l.length === 1 ? 9 : l.length === 2 ? 8 : 7.5, x = g * 0.35;
     return _`
       ${r ? f : _`<polygon points=${h} fill="#020a14" fill-opacity="0.35" transform="translate(0.8 1.6)" />
           <polygon points=${h} fill=${n} fill-opacity="0.12" />
@@ -3952,7 +3953,7 @@ const Y = {
         <text x="0" y=${x} text-anchor="middle" class="val" font-size=${this._fs(g)} font-weight="600"
           >${L(this._w(s), this._loc)}</text>
         <text x="0" y=${x + v + 3} text-anchor="middle" class="tiny" style=${`font-size:${this._fs(v)}px`}
-          >${Lt(this._name(s), l.length === 4 || l.length === 3 ? 16 : 22)}</text>
+          >${bt(this._name(s), l.length === 4 || l.length === 3 ? 16 : 22)}</text>
       </g>`;
   }
   /** The glass inverter picture, placed by its connectors. */
@@ -3979,8 +3980,8 @@ const Y = {
       <rect x=${e - 6} y=${s + 3} width="12" height=${b - s - 3} fill=${r} fill-opacity="0.28" stroke=${D}
         stroke-opacity="0.6" stroke-width="0.7" />
       <ellipse cx=${e} cy=${s + 3} rx="6" ry="1.8" fill="#e6f6ff" fill-opacity="0.45" />
-      <text x=${e} y=${s + 20} text-anchor="middle" class="bt" font-size=${this._fs(7.5)}>${Lt(t, V ? 9 : 11)}</text>
-      <text x=${e} y=${s + 33} text-anchor="middle" class="bt" font-size=${this._fs(13)} font-weight="600">${Et(o, this._loc)}</text>
+      <text x=${e} y=${s + 20} text-anchor="middle" class="bt" font-size=${this._fs(7.5)}>${bt(t, V ? 9 : 11)}</text>
+      <text x=${e} y=${s + 33} text-anchor="middle" class="bt" font-size=${this._fs(13)} font-weight="600">${Lt(o, this._loc)}</text>
       <text x=${e} y=${s + 43} text-anchor="middle" class="bt" font-size=${this._fs(8)}>${U}</text>
       <text x=${e} y=${s + 53} text-anchor="middle" class="bt" font-size=${this._fs(8.5)}>${L(i === null ? null : Math.abs(i), this._loc)}</text>
       <text x=${e} y=${s + 62} text-anchor="middle" class="bt" font-size=${this._fs(7.5)}>${l}</text>
@@ -4062,7 +4063,7 @@ const Y = {
   // the middle of the house box, the load trains from there; backup trains
   // start at the bottom of their battery and leave through its shell.
   _stringRoute(t, e) {
-    return `M ${t + ae / 2} ${e + le / 2} V ${ge + 13} H ${Mt[0]} V ${Mt[1]}`;
+    return `M ${t + ae / 2} ${e + le / 2} V ${ge + 13} H ${St[0]} V ${St[1]}`;
   }
   _houseIn() {
     const [t, e] = this._invTop;
@@ -4222,7 +4223,7 @@ const Y = {
               </g>
             </g>` : f}
         ${i !== null ? _`<text x=${S.toFixed(1)} y=${q.toFixed(1)} text-anchor="middle" class="bt" font-size=${this._fs(9)}
-              font-weight="600">${Et(i, this._loc)}</text>` : f}
+              font-weight="600">${Lt(i, this._loc)}</text>` : f}
         <text transform=${`translate(${et.toFixed(1)} ${ft.toFixed(1)}) rotate(${M})`} class=${l ? "dim" : "val"}
           style=${`font-size:${this._fs(11)}px`} font-weight="600">${L(n, this._loc)}</text>
         <text transform=${`translate(${p.toFixed(1)} ${y.toFixed(1)}) rotate(${-M})`} class="dim"
@@ -4255,16 +4256,16 @@ const Y = {
   /** Each group sits on its own tinted glass slab. */
   // a small "Gesamt" box above all load groups: every consumer incl. backup loads
   get _groupsTop() {
-    return 22 + St + cs;
+    return 22 + At + cs;
   }
   _listsHeader(t) {
     const e = F - 12, s = 4, n = this._c.home, i = C(this._s(this._layout?.home_today));
     return this._tap(this._layout?.entities.home_power, _`
-      ${this._panel(e, s, tt + 3 - e, St, n)}
-      <text x=${F - 6} y=${s + St * 0.68} class="small grp" fill=${n}>Gesamt</text>
-      <text x=${rt - 1} y=${s + St * 0.68} text-anchor="end" class="val" style=${`font-size:${this._fs(10)}px`}
+      ${this._panel(e, s, tt + 3 - e, At, n)}
+      <text x=${F - 6} y=${s + At * 0.68} class="small grp" fill=${n}>Gesamt</text>
+      <text x=${rt - 1} y=${s + At * 0.68} text-anchor="end" class="val" style=${`font-size:${this._fs(10)}px`}
         font-weight="600">${L(t, this._loc)}</text>
-      <text x=${tt - 1} y=${s + St * 0.68} text-anchor="end" class="dim" style=${`font-size:${this._fs(9)}px`}
+      <text x=${tt - 1} y=${s + At * 0.68} text-anchor="end" class="dim" style=${`font-size:${this._fs(9)}px`}
         >${W(i, this._loc)}</text>`);
   }
   _groupPanel(t) {

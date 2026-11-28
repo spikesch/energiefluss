@@ -2,6 +2,20 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.6.2
+
+**Deutsch**
+
+- Klassik-Karte: Der Preis am Netzmast ist jetzt wirklich farbig (blassrot beim Bezug, blassgrün beim Einspeisen) – in 0.6.1 blieb er grau.
+- Klassik-Karte: Lange Gruppentitel wie „Notstrom – Speicher 4“ laufen nicht mehr in die Zahlen; sie werden gekürzt, der volle Name steht im Tooltip.
+- Neue Screenshots mit fünf Batterien, Wallbox und zwei Notstrom-Boxen.
+
+**English**
+
+- Classic card: the price at the grid pylon is now really coloured (pale red while buying, pale green while selling) – in 0.6.1 it stayed grey.
+- Classic card: long group titles such as "Notstrom – Speicher 4" no longer run into the numbers; they are shortened, the full name is in the tooltip.
+- New screenshots with five batteries, a wallbox and two backup boxes.
+
 ## 0.6.1
 
 **Deutsch**

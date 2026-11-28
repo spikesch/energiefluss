@@ -388,7 +388,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     </g>`;
   }
 
-  // long lists: only the biggest daily consumers, the rest folds away
+  // long lists: only the biggest consumers right now, the rest folds away
   protected _listLimit(title: string): number | null {
     return title === "Grundlast" ? 8 : title === "Zusätzlich" ? 3 : null;
   }
@@ -865,6 +865,11 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     const kinds = trainBalls(watts);
     const tints = colour === this._c.backup ? this._tints(kinds, this._backupShares(source)) : this._tints(kinds);
     return kinds.map((k, i) => ({ r: BALL_R[k], colour: tints[i] }));
+  }
+
+  // the house sends every load its own train, already made up to fit it
+  protected get _feedAsOne(): boolean {
+    return false;
   }
 
   // on the shared feed of a list the balls are consolidated (big ones per

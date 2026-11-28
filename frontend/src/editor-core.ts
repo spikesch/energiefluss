@@ -298,7 +298,8 @@ const HELPERS: Record<string, string> = {
   grid_export_price: "Optional statt des festen Werts, falls sich die Vergütung ändert.",
   fixed_loads: "Laufen, wann sie müssen, ihr Verbrauch lässt sich kaum verschieben – z. B. Kühlschrank, Router, Server, Heizungspumpe, Licht, TV.",
   flexible_loads: "Du bestimmst selbst, wann sie laufen – z. B. Waschmaschine, Trockner, Spülmaschine, Wallbox, Pool-Pumpe. Diese lassen sich in Zeiten mit PV-Überschuss oder günstigem dynamischem Strompreis (z. B. Tibber) legen.",
-  home_power: "Leer lassen: wird aus PV, Batterien und Netz berechnet.",
+  home_power:
+    "Meist leer lassen: Sind PV, Netz und alle Batterien gemessen, rechnet Wattrio das Haus aus der Bilanz – Batterie-Laden zählt nie dazu, Batterie-Abgabe nur, soweit sie ins Haus geht. Der Sensor hilft nur, wenn einer dieser Werte fehlt.",
   solar_today: "Leer lassen: die Integration zählt selbst mit.",
   grid_import_today: "Leer lassen: die Integration zählt selbst mit.",
   grid_export_today: "Leer lassen: die Integration zählt selbst mit.",

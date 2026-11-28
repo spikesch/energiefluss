@@ -32,14 +32,15 @@ SIMS = [
     ("grundlast", "Grundlast (nicht gemessen)", 0, 1500, 10, "W", 250, "power", "load"),
     ("load_vava", "Vava", 0, 1500, 5, "W", 0, "power", "load"),
     ("load_tv", "TV", 0, 400, 5, "W", 95, "power", "load"),
-    ("load_ecoflow", "Ecoflow", 0, 3000, 5, "W", 985, "power", "load"),
+    ("load_ecoflow", "Ecoflow", 0, 3000, 5, "W", 0, "power", "load"),
     ("load_neubau", "Neubau", 0, 3000, 5, "W", 124, "power", "load"),
     # kettle on the Neubau sub-meter: the Neubau sensor shows both, the grid counts it once
     ("load_wasserkocher", "Wasserkocher", 0, 2500, 10, "W", 0, "power", "load"),
     ("load_klima1", "Klima1", 0, 1500, 5, "W", 2, "power", "load"),
     ("load_klima3", "Klima3", 0, 2500, 5, "W", 894, "power", "load"),
-    ("load_kuehlschrank", "Kühlschrank Küche Keller", 0, 300, 5, "W", 80, "power", "load"),
-    ("load_server", "Server / IT", 0, 1500, 5, "W", 180, "power", "load"),
+    # on a battery's backup output (Speicher 4 / Zendure): fed by the battery, not the grid
+    ("load_kuehlschrank", "Kühlschrank Küche Keller", 0, 300, 5, "W", 80, "power", "backup"),
+    ("load_server", "Server / IT", 0, 1500, 5, "W", 180, "power", "backup"),
     ("load_buero", "Büro (kW)", 0, 2, 0.01, "kW", 0.15, "power", "load"),
     ("aux_trockner", "Trockner", 0, 3000, 10, "W", 0, "power", "load"),
     ("aux_waschmaschine", "Waschmaschine Shelly Plug S", 0, 2500, 10, "W", 0, "power", "load"),

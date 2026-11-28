@@ -32,11 +32,16 @@ def parse_float(state: str | None) -> float | None:
 
 
 def to_watts(state: str | None, unit: str | None) -> float | None:
-    """Convert a power state to watts based on its unit (W assumed if unknown)."""
+    """Convert a power state to watts based on its unit (W if it has none).
+
+    Any other unit (kWh, %, V …) is not a power: no value, instead of a meter
+    reading of 20,000 kWh turning into 20 kW.
+    """
     value = parse_float(state)
     if value is None:
         return None
-    return value * _POWER_FACTORS.get(unit or "W", 1.0)
+    factor = _POWER_FACTORS.get(unit or "W")
+    return None if factor is None else value * factor
 
 
 @dataclass
@@ -57,6 +62,31 @@ class BatteryInput:
     charge: float | None = None
     discharge: float | None = None
     measured: bool = True
+    # power of the loads on its own (backup) output, and whether it can feed the
+    # house at all: its output reaches the house only beyond what those take
+    backup: float | None = None
+    backup_only: bool = False
+
+    def house_part(self, power: float | None) -> float:
+        """What the battery gives the house (+) or takes from the supply (-).
+
+        Charging never belongs to the house; output only as far as it goes into
+        the house, not what its own backup sockets take.
+        """
+        if self.split and self.measured:
+            # separate input and output: everything that goes in stays out of the
+            # house, even while it passes straight through to the backup sockets
+            charge = abs(self.charge or 0.0)
+            out = abs(self.discharge or 0.0)
+            to_house = 0.0 if self.backup_only else max(out - (self.backup or 0.0), 0.0)
+            return to_house - charge
+        if power is None:
+            return 0.0
+        if power >= 0:
+            return -power
+        if self.backup_only:
+            return 0.0
+        return max(-power - (self.backup or 0.0), 0.0)
 
     @property
     def normalized_power(self) -> float | None:
@@ -175,10 +205,13 @@ def _grid(inp: Inputs) -> float | None:
 def compute(inp: Inputs) -> Result:
     """Derive all normalized values; fill one gap of the energy balance.
 
-    Balance: PV + grid = house + battery charging. If one of these has no
-    sensor configured, it is computed from the others. Usually that is the
-    house; with a measured house consumption the grid, the PV or a single
-    battery without power sensor can be computed instead.
+    Balance: PV + grid + battery output into the house = house + battery
+    charging. Battery inputs never count to the house, battery outputs only as
+    far as they feed the house (not their own backup sockets). When PV, grid and
+    every battery are measured the house always comes from this balance: a
+    meter's house consumption may contain batteries on house sockets. Otherwise
+    one missing value is computed from the others; with a measured house
+    consumption that may be the grid, the PV or a single battery.
     """
     computed: set[str] = set()
     solar_cfg = bool(inp.solar_strings) or inp.solar_total_configured
@@ -202,18 +235,30 @@ def compute(inp: Inputs) -> Result:
     def known_bats() -> float:
         return sum(p for p in bat_powers if p is not None)
 
+    def batteries_to_house() -> float:
+        return sum(b.house_part(p) for b, p in zip(inp.batteries, bat_powers))
+
+    # everything measured: the balance is the house (see above)
+    balanced = (
+        grid_cfg
+        and grid is not None
+        and solar_cfg
+        and solar is not None
+        and not unmeasured_bats
+        and all(p is not None for p in bat_powers)
+    )
     # no house sensor, or it has no value right now (e.g. a template sensor whose
     # source is unavailable): take the house from the energy balance
-    if home is None:
+    if home is None or balanced:
         if solar is not None or grid is not None or any(p is not None for p in bat_powers):
-            home = max((solar or 0.0) + (grid or 0.0) - known_bats(), 0.0)
+            home = max((solar or 0.0) + (grid or 0.0) + batteries_to_house(), 0.0)
             computed.add("home")
     elif home is not None:
         if not grid_cfg and not unmeasured_bats:
-            grid = home + known_bats() - (solar or 0.0)
+            grid = home - batteries_to_house() - (solar or 0.0)
             computed.add("grid")
         elif not solar_cfg and grid_cfg and not unmeasured_bats:
-            solar = max(home + known_bats() - (grid or 0.0), 0.0)
+            solar = max(home - batteries_to_house() - (grid or 0.0), 0.0)
             computed.add("solar")
         elif len(unmeasured_bats) == 1 and grid_cfg and solar_cfg:
             i = unmeasured_bats[0]
@@ -238,10 +283,10 @@ def compute(inp: Inputs) -> Result:
     backup = _sum(inp.backup_loads)
 
     # Part of the house consumption no load sensor accounts for (base load).
-    # Backup loads are fed through the inverter but still count to the house.
+    # Backup loads hang on a battery's own output, not on the house.
     unmeasured = None
-    if home is not None and any(v is not None for v in (fixed, flexible, backup, wallbox)):
-        known = (fixed or 0.0) + (flexible or 0.0) + (backup or 0.0)
+    if home is not None and any(v is not None for v in (fixed, flexible, wallbox)):
+        known = (fixed or 0.0) + (flexible or 0.0)
         if not inp.wallbox_flexible:
             known += wallbox or 0.0
         unmeasured = max(home - known, 0.0)

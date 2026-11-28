@@ -29,6 +29,7 @@ from .calc import (
 )
 from .const import (
     CONF_BACKUP_LOADS,
+    CONF_BATTERY_BACKUP_ONLY,
     CONF_BATTERIES,
     CONF_BATTERY_CAPACITY,
     CONF_BATTERY_CHARGE,
@@ -206,7 +207,13 @@ class EnergieflussHub:
             charge=self._watts(b.get(CONF_BATTERY_CHARGE)),
             discharge=self._watts(b.get(CONF_BATTERY_DISCHARGE)),
             measured=measured,
+            backup=self._sum_watts(b.get(CONF_BACKUP_LOADS)),
+            backup_only=bool(b.get(CONF_BATTERY_BACKUP_ONLY)),
         )
+
+    def _sum_watts(self, entity_ids: list[str] | None) -> float | None:
+        values = [w for w in (self._watts(e) for e in entity_ids or []) if w is not None]
+        return sum(max(w, 0.0) for w in values) if values else None
 
     def _inputs(self) -> Inputs:
         cfg = self.config

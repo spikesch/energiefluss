@@ -21,7 +21,9 @@ BatteryInput, Inputs, compute = calc.BatteryInput, calc.Inputs, calc.compute
 
 @pytest.mark.parametrize(
     ("state", "unit", "expected"),
-    [("1.5", "kW", 1500.0), ("230", "W", 230.0), ("230", None, 230.0), ("unavailable", "W", None), (None, "W", None)],
+    [("1.5", "kW", 1500.0), ("230", "W", 230.0), ("230", None, 230.0), ("unavailable", "W", None), (None, "W", None),
+     # a meter reading or a percentage is no power
+     ("23944.9", "kWh", None), ("50", "%", None)],
 )
 def test_to_watts(state, unit, expected):
     assert calc.to_watts(state, unit) == expected
@@ -51,9 +53,15 @@ def test_unavailable_home_sensor_falls_back_to_balance():
     assert "home" in r.computed
 
 
-def test_measured_home_wins():
+def test_balance_wins_when_everything_is_measured():
     r = compute(Inputs(solar_strings=[1000], grid_power=200, home_measured=900))
+    assert r.home_power == 1200
+
+
+def test_measured_home_fills_a_gap():
+    r = compute(Inputs(grid_power=200, home_measured=900))
     assert r.home_power == 900
+    assert r.solar_power == 700
 
 
 def test_inversions():

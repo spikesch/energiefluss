@@ -71,13 +71,35 @@ def test_charge_and_discharge_totals():
     assert r.battery_power == 300
 
 
-def test_backup_loads_count_to_house_and_reduce_unmeasured():
+def test_backup_loads_are_not_part_of_the_house():
     r = compute(
         Inputs(solar_strings=[3000], grid_power=0, fixed_loads=[500], flexible_loads=[1000], backup_loads=[300, None])
     )
     assert r.home_power == 3000
     assert r.backup_power == 300
-    assert r.unmeasured_power == 1200
+    assert r.unmeasured_power == 1500
+
+
+def test_battery_inputs_never_count_to_the_house():
+    # a meter counts the socket battery's 1200 W as house consumption: the balance does not
+    bats = [BatteryInput(power=900), BatteryInput(power=1200)]
+    r = compute(Inputs(solar_strings=[800], grid_power=2800, home_measured=2700, batteries=bats, fixed_loads=[1000]))
+    assert r.home_power == 1500  # 800 + 2800 - 900 - 1200, not the meter's 2700
+    assert r.unmeasured_power == 500
+    r = compute(Inputs(solar_strings=[800], grid_power=2800, home_measured=2700, batteries=bats[:1], fixed_loads=[1000]))
+    assert r.home_power == 2700
+    assert r.unmeasured_power == 1700
+
+
+def test_battery_output_counts_only_as_far_as_it_feeds_the_house():
+    # 1000 W out, 300 W of it on its own backup sockets: 700 W reach the house
+    bats = [BatteryInput(power=-1000, backup=300)]
+    r = compute(Inputs(solar_strings=[0], grid_power=100, batteries=bats, backup_loads=[300]))
+    assert r.home_power == 800
+    # a battery that only feeds its backup sockets gives the house nothing
+    bats = [BatteryInput(power=-1000, backup=300, backup_only=True)]
+    r = compute(Inputs(solar_strings=[0], grid_power=100, batteries=bats, backup_loads=[300]))
+    assert r.home_power == 100
 
 
 def test_wallbox_controllable_by_default():
@@ -106,3 +128,11 @@ def test_contained_loads_are_not_counted_twice():
     assert links == {"sensor.kettle": "sensor.neubau"}
     # chains are cut: a child can't be a parent at the same time
     assert calc.valid_parents({"a": "b", "b": "c"}, {"a", "b", "c"}) == {"b": "c"}
+
+
+def test_pass_through_battery_with_separate_input_and_output():
+    # 816 W in from a house socket, 743 W out to its own backup sockets only
+    bats = [BatteryInput(split=True, charge=816, discharge=743, backup_only=True), BatteryInput(power=936)]
+    r = compute(Inputs(solar_strings=[743], grid_power=2434, batteries=bats, home_measured=1752))
+    assert r.home_power == 743 + 2434 - 936 - 816
+    assert r.battery_powers[0] == 73

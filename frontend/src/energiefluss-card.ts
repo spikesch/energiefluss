@@ -429,6 +429,10 @@ export class EnergieflussCard extends LitElement {
   protected _feedTrain(_d: string, _watts: number, _colour: string, _source?: string): SVGTemplateResult | null {
     return null;
   }
+  /** One consolidated train on a group's shared feed instead of every load's own train from the house. */
+  protected get _feedAsOne(): boolean {
+    return true;
+  }
   /** Dots of the house line (from the inverter to the house). */
   protected _houseDots(d: string, colour: string, watts: number | null): SVGTemplateResult {
     return this._dot(d, colour, watts, true);
@@ -775,14 +779,16 @@ export class EnergieflussCard extends LitElement {
       lead?: (lineY: number) => string | null,
     ) => {
       if (!loads.length) return;
-      // long lists show only the biggest daily consumers until unfolded
+      // long lists show only the loads drawing most right now until unfolded
+      // (today's energy decides among the idle ones)
       const limit = this._listLimit(title);
       const foldable = limit !== null && loads.length > limit;
       const expanded = this._expanded.has(title);
       let shown = loads;
       if (foldable) {
         const today = (l: Load) => num(this._s(l.today)) ?? 0;
-        const keep = new Set([...loads].sort((a, b) => today(b) - today(a)).slice(0, limit));
+        const now = (l: Load) => Math.max(this._w(l.entity) ?? 0, 0);
+        const keep = new Set([...loads].sort((a, b) => now(b) - now(a) || today(b) - today(a)).slice(0, limit));
         const hidden = loads.filter((l) => !keep.has(l));
         const sumToday = hidden.reduce<number | null>((sum, l) => {
           const v = num(this._s(l.today));
@@ -1021,11 +1027,13 @@ export class EnergieflussCard extends LitElement {
       for (const k of kids) rows.push({ ...k, child: true, parentRow: at });
     }
     const entry = this._rowEntryX;
-    // a look may run the group's power as one train up to the bracket; the
-    // wagons then start there and split off to their rows
+    // a look may colour each load's train by where its power comes from
+    // (_feedTrain); it may also run the group's power as one train up to the
+    // bracket (_feedAsOne), the wagons then start there and split off to their rows
     const feedRoute = loads[0]?.route ?? loads[0]?.trunk;
     const feedProbe = feedRoute ? this._feedTrain(feedRoute, 0, colour) : null;
-    const split = feedProbe !== null;
+    const tinted = feedProbe !== null;
+    const split = tinted && this._feedAsOne;
     const path = (l: ListLoad, i: number) =>
       split ? `M ${BRACKET_X} ${y0 + mid} V ${y0 + i * R + mid} H ${entry}` : `${l.route ?? l.trunk} V ${y0 + i * R + mid} H ${entry}`;
     // a contained load's wagon rides into its parent's station and on along
@@ -1092,7 +1100,7 @@ export class EnergieflussCard extends LitElement {
           const tip = `${l.name} · enthalten in ${rows[l.parentRow ?? 0].name}`;
           return svg`
             ${this._branch(`M ${LOAD_X0 + 4} ${top} V ${y + mid} H ${LOAD_X0 + 10}`, colour, "child")}
-            ${this._bySize ? wagonDots(childPath(l, i), l.w, i) : split ? this._feedTrain(childPath(l, i), l.w ?? 0, colour, l.source) : nothing}
+            ${this._bySize ? wagonDots(childPath(l, i), l.w, i) : tinted ? this._feedTrain(childPath(l, i), l.w ?? 0, colour, l.source) : nothing}
             <g opacity=${idle ? 0.45 : 0.85} class="tap" data-entity=${l.entity}>
               ${this._nameBox(l.name, y, colour, tip, 12)}
               ${this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")}
@@ -1102,7 +1110,7 @@ export class EnergieflussCard extends LitElement {
         // a look that splits the feed colours each load's train by where its power comes from
         const dots = this._bySize
           ? wagonDots(path(l, i), own(i), i)
-          : split
+          : tinted
             ? this._feedTrain(path(l, i), (l.more ? l.w : own(i)) ?? 0, colour, l.source)
             : this._dot(path(l, i), colour, l.w, true, 2.4);
         if (l.more) {

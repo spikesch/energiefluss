@@ -20,6 +20,24 @@
 - Glass card: the name column reaches closer to the numbers, more names fit on one line.
 - The cards only redraw when one of their own sensors changes – no longer on every change anywhere in Home Assistant. Saves CPU, especially on wall tablets.
 
+## 0.7.0
+
+**Deutsch**
+
+- Hausverbrauch neu gerechnet: Was in Batterien geht, zählt nie zum Haus; was aus Batterien kommt, nur soweit es ins Haus geht – nicht, was ihre eigenen Notstrom-Steckdosen nehmen. Sind PV, Netz und alle Batterien gemessen, kommt das Haus aus dieser Bilanz statt aus einem gemessenen Hausverbrauch (der enthält Steckdosen-Speicher wie Zendure Hyper oder EcoFlow mit). Bei Batterien mit getrennten Sensoren zählen Laden und Entladen einzeln, auch bei Durchleitung.
+- Notstrom-Verbraucher gehören nicht mehr zum Haus und mindern „nicht erfasst“ nicht mehr.
+- Nur noch echte Leistungswerte (W, kW): Zählerstände in kWh oder Prozentwerte werden nicht mehr als Watt gelesen; die Einstellungen warnen davor.
+- Glas-Karte: Das Haus schickt jedem Verbraucher wieder seinen eigenen Zug (in Herkunftsfarben) statt eines gemeinsamen Zugs bis zur Liste.
+- Eingeklappte Listen zeigen die größten Verbraucher im Moment statt der größten Tagesverbraucher.
+
+**English**
+
+- House consumption recalculated: what goes into batteries never counts to the house; what comes out of them only as far as it goes into the house – not what their own backup sockets take. With PV, grid and all batteries measured, the house comes from this balance instead of a measured house consumption (which contains socket batteries like Zendure Hyper or EcoFlow). Batteries with separate sensors count charging and discharging separately, pass-through included.
+- Backup loads are no longer part of the house and no longer reduce "nicht erfasst" (unmeasured).
+- Only real power values (W, kW): meter readings in kWh or percentages are no longer read as watts; the settings warn about them.
+- Glass card: the house sends every load its own train again (in source colours) instead of one shared train up to the list.
+- Folded lists show the biggest consumers right now instead of the biggest daily consumers.
+
 ## 0.6.4
 
 **Deutsch**

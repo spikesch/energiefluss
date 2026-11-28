@@ -19,7 +19,9 @@ export function watts(s: StateLike | undefined): number | null {
   const v = num(s);
   if (v === null) return null;
   const unit = (s!.attributes.unit_of_measurement as string | undefined) ?? "W";
-  return v * (POWER_FACTORS[unit] ?? 1);
+  // kWh, %, … is no power: no value (like the integration)
+  const factor = POWER_FACTORS[unit];
+  return factor === undefined ? null : v * factor;
 }
 
 /** Energy state in kWh, honouring Wh/kWh/MWh units. */

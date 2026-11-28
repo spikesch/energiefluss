@@ -388,7 +388,12 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     </g>`;
   }
 
-  // long lists: only the biggest consumers right now, the rest folds away
+  // the rows keep their order by today's energy, so the trains do not reshuffle
+  protected get _rowsByEnergy(): boolean {
+    return true;
+  }
+
+  // long lists: only the biggest daily consumers, the rest folds away
   protected _listLimit(title: string): number | null {
     return title === "Grundlast" ? 8 : title === "Zusätzlich" ? 3 : null;
   }

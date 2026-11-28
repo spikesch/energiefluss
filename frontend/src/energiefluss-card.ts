@@ -785,16 +785,14 @@ export class EnergieflussCard extends LitElement {
       lead?: (lineY: number) => string | null,
     ) => {
       if (!loads.length) return;
-      // long lists show only the loads drawing most right now until unfolded
-      // (today's energy decides among the idle ones)
+      // long lists show only the biggest daily consumers until unfolded
       const limit = this._listLimit(title);
       const foldable = limit !== null && loads.length > limit;
       const expanded = this._expanded.has(title);
       let shown = loads;
       if (foldable) {
         const today = (l: Load) => num(this._s(l.today)) ?? 0;
-        const now = (l: Load) => Math.max(this._w(l.entity) ?? 0, 0);
-        const keep = new Set([...loads].sort((a, b) => now(b) - now(a) || today(b) - today(a)).slice(0, limit));
+        const keep = new Set([...loads].sort((a, b) => today(b) - today(a)).slice(0, limit));
         const hidden = loads.filter((l) => !keep.has(l));
         const sumToday = hidden.reduce<number | null>((sum, l) => {
           const v = num(this._s(l.today));
@@ -945,6 +943,12 @@ export class EnergieflussCard extends LitElement {
     return null;
   }
 
+  /** Rows in a steady order by today's energy: the trains keep their order
+   *  while the loads switch on and off. */
+  protected get _rowsByEnergy(): boolean {
+    return false;
+  }
+
   /** Sort idle loads by today's energy (after the running ones) instead of by name. */
   protected get _idleByEnergy(): boolean {
     return false;
@@ -1013,7 +1017,9 @@ export class EnergieflussCard extends LitElement {
     const isOn = (x: { w: number | null }) => x.w !== null && Math.abs(x.w) >= MIN_FLOW_W;
     const energy = (x: { today: string | null }) => num(this._s(x.today)) ?? 0;
     const byPower = <T extends { w: number | null; name: string; today: string | null }>(a: T, b: T) =>
-      this._idleByEnergy
+      this._rowsByEnergy
+        ? energy(b) - energy(a) || a.name.localeCompare(b.name)
+        : this._idleByEnergy
         ? Number(isOn(b)) - Number(isOn(a)) ||
           (isOn(a) ? b.w! - a.w! : energy(b) - energy(a)) ||
           a.name.localeCompare(b.name)

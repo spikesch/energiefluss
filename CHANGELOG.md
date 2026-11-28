@@ -2,6 +2,18 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.7.2
+
+**Deutsch**
+
+- Glas-Karte: Verbraucher stehen wieder nach Tagesverbrauch sortiert, auch die laufenden. Die Reihenfolge bleibt ruhig, wenn Geräte an- und ausgehen, und die Züge kommen nicht durcheinander.
+- Eingeklappte Listen zeigen wieder die größten Tagesverbraucher.
+
+**English**
+
+- Glass card: loads are sorted by today's energy again, running ones included. The order stays calm while devices switch on and off, and the trains no longer get mixed up.
+- Folded lists show the biggest daily consumers again.
+
 ## 0.7.1
 
 **Deutsch**

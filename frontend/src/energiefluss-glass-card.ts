@@ -224,6 +224,11 @@ const PYLON_S = 0.7;
 const TILE_X = 8;
 const TILE_W = 48;
 const PANEL_GAP = 1.25; // air between two load group panels
+// load names: room up to the power column (its widest text, e.g. "2,10 kW",
+// plus a little air) and an estimate of the width of one character
+const POWER_TEXT_W = 30;
+const NAME_CHAR_W = 4; // at the normal name size (measured about 2.9, room for capitals)
+const NAME_CHAR_W_SMALL = 3.2; // at the small two-line size
 const TOTAL_H = 15; // the "Gesamt" box above the load groups
 const GRID_TILE_Y = 196;
 // Glass inverter picture: its top connector sits right below the house box,
@@ -1076,7 +1081,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     const y = GRID_TILE_Y;
     // power, then the price in its own line, then today's import / export (compact)
     const sep = y + (cents !== null ? 23 : 15);
-    const h = sep - y + (rows.length ? rows.length * 8.5 + 3 : 0);
+    const h = this._gridTileH();
     return svg`
       ${this._pylon(c)}
       ${this._flow(cable, c, grid, !exporting)}
@@ -1095,17 +1100,37 @@ export class EnergieflussGlassCard extends EnergieflussCard {
           ><tspan fill=${r.active ? c : nothing}>${r.arrow}</tspan> ${fmtEnergy(r.kwh, this._loc)}<tspan
           class=${r.active ? "" : "tiny"} style=${`font-size:${this._fs(7.5)}px`} fill=${r.active ? c : nothing}> ${r.name}</tspan></text>`,
       )}
-      ${this._wallbox(this._carTop(y + h + 8))}
+      ${this._wallbox(this._carTop())}
     `;
   }
 
+  /** Height of the grid tile: power, the price if there is one, today's import / export. */
+  protected _gridTileH(): number {
+    const { cents, imp, exp } = this._gridData();
+    const rows = (imp !== null ? 1 : 0) + (exp !== null ? 1 : 0);
+    return (cents !== null ? 23 : 15) + (rows ? rows * 8.5 + 3 : 0);
+  }
+
+  /** Height of the car picture in card units. */
+  protected get _carH(): number {
+    return CAR_IMAGE.height * (CAR_W / CAR_IMAGE.width);
+  }
+
+  // the car hangs below the grid tile: without batteries (or with few lists)
+  // it may reach further down than anything else, the card grows with it
+  protected get _viewH(): number {
+    const base = super._viewH;
+    if (!this._layout?.wallbox) return base;
+    return Math.max(base, this._carTop() + this._carH + 4);
+  }
+
   /** Top of the car picture: its plate ends flush with the lowest battery, but
-   *  never higher than `min` (just below the grid tile). */
-  protected _carTop(min: number): number {
+   *  never higher than just below the grid tile. */
+  protected _carTop(min = GRID_TILE_Y + this._gridTileH() + 8): number {
     const bats = this._displayBatteries();
     if (!bats.length) return min;
     const bottom = Math.max(...bats.map((b) => b.top)) + BAT_H + 3.5; // cylinder bottom, see _batteryWidget
-    return Math.max(min, bottom - CAR_IMAGE.height * (CAR_W / CAR_IMAGE.width));
+    return Math.max(min, bottom - this._carH);
   }
 
   /**
@@ -1275,15 +1300,17 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     const ICON = 9;
     const ix = LOAD_X0 + indent;
     const nx = ix + ICON + 3;
-    const avail = LOAD_XP - LOAD_PW - 2 - nx;
-    const { lines, small } = fitLabel(name, Math.floor(avail / 5.2), Math.floor(avail / 4.2));
+    // the numbers are plain right-aligned text: the name may run up to them
+    const avail = LOAD_XP - POWER_TEXT_W - nx;
+    const { lines, small } = fitLabel(name, Math.floor(avail / NAME_CHAR_W), Math.floor(avail / NAME_CHAR_W_SMALL));
     return svg`<g>
       <title>${tooltip}</title>
       ${this._line(iconFor(name), ix, y + (R - ICON) / 2, ICON, colour)}
-      ${small
+      ${small && lines.length > 1
         ? svg`<text x=${nx} y=${y + R / 2 - 1.5} class="name" font-size=${this._fs(7.5)}>${lines[0]}</text>
-              <text x=${nx} y=${y + R / 2 + 5.5} class="name" font-size=${this._fs(7.5)}>${lines[1] ?? ""}</text>`
-        : svg`<text x=${nx} y=${y + R / 2 + 3} class="name" font-size=${this._fs(9.5)}>${lines[0]}</text>`}
+              <text x=${nx} y=${y + R / 2 + 5.5} class="name" font-size=${this._fs(7.5)}>${lines[1]}</text>`
+        : svg`<text x=${nx} y=${y + R / 2 + (small ? 2.2 : 3)} class="name" font-size=${this._fs(small ? 7.5 : 9.5)}
+            >${lines[0]}</text>`}
     </g>`;
   }
 

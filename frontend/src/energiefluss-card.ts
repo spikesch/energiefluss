@@ -11,6 +11,7 @@ import {
 import { property, state } from "lit/decorators.js";
 import { UPDATED_EVENT } from "./editor-core";
 import { EDIT_EVENT, editTarget } from "./edit-target";
+import { statesChanged, watchedEntities } from "./watched";
 import "./card-editor";
 import {
   batterySlots,
@@ -216,6 +217,25 @@ export class EnergieflussCard extends LitElement {
 
   getGridOptions() {
     return { columns: 12, min_columns: 6, rows: "auto" };
+  }
+
+  /** Entities of the current layout (see shouldUpdate). */
+  private _watched?: { layout: Layout; ids: string[] };
+
+  // Home Assistant hands over a new `hass` on every state change anywhere in
+  // the house: redraw only when one of this card's sensors (or the language)
+  // changed. Everything else (config, layout, unfolded lists, the settings
+  // mode, a look's own requests) always redraws.
+  protected shouldUpdate(changed: PropertyValues): boolean {
+    if (changed.size !== 1 || !changed.has("hass")) return true;
+    const before = changed.get("hass") as Hass | undefined;
+    const now = this.hass;
+    if (!before || !now || !this._layout) return true;
+    if (before.locale?.language !== now.locale?.language) return true;
+    if (this._watched?.layout !== this._layout) {
+      this._watched = { layout: this._layout, ids: [...watchedEntities(this._layout)] };
+    }
+    return statesChanged(this._watched.ids, before.states, now.states);
   }
 
   protected updated(changed: PropertyValues): void {
@@ -1134,10 +1154,10 @@ export class EnergieflussCard extends LitElement {
     return svg`<g>
       <title>${tooltip}</title>
       <rect x=${x} y=${y + 1} width=${w} height="18" rx="4" fill="none" stroke=${colour} stroke-width="1" />
-      ${small
+      ${small && lines.length > 1
         ? svg`<text x=${x + 4} y=${y + 9} class="name" font-size=${this._fs(7.5)}>${lines[0]}</text>
-              <text x=${x + 4} y=${y + 17} class="name" font-size=${this._fs(7.5)}>${lines[1] ?? ""}</text>`
-        : svg`<text x=${x + 4} y=${y + 13.5} class="name" font-size=${this._fs(10)}>${lines[0]}</text>`}
+              <text x=${x + 4} y=${y + 17} class="name" font-size=${this._fs(7.5)}>${lines[1]}</text>`
+        : svg`<text x=${x + 4} y=${y + (small ? 12.6 : 13.5)} class="name" font-size=${this._fs(small ? 7.5 : 10)}>${lines[0]}</text>`}
     </g>`;
   }
 

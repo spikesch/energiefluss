@@ -67,8 +67,13 @@ export function autarky(home: number | null, gridImport: number | null): number 
   return Math.max(0, Math.min(100, (1 - gridImport / home) * 100));
 }
 
+/** Cut a name to `max` characters with an ellipsis. A number at its end stays
+ *  ("Speicher 3" → "Speich… 3"): it is what tells similar names apart. */
 export function shortName(name: string, max = 9): string {
-  return name.length > max ? name.slice(0, max - 1) + "…" : name;
+  if (name.length <= max) return name;
+  const tail = /\s*\d+$/.exec(name)?.[0] ?? "";
+  if (tail && tail.length <= max - 3) return name.slice(0, max - tail.length - 1).trimEnd() + "…" + tail;
+  return name.slice(0, max - 1) + "…";
 }
 
 /** Price state in ct/kWh: accepts €/kWh, EUR/kWh or ct/kWh units. */
@@ -155,8 +160,11 @@ export function fitLabel(name: string, maxOne = 15, maxTwo = 19): { lines: strin
     const at = pool.reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a));
     return { lines: [text.slice(0, at), cut(text.slice(at + 1))], small: true };
   }
-  // one long word: hard split
-  return { lines: [text.slice(0, maxTwo), cut(text.slice(maxTwo))], small: true };
+  // the first word alone is too long: never break inside a word. One word
+  // stays one small line (cut if needed), otherwise the rest goes below it.
+  const space = text.indexOf(" ");
+  if (space < 0) return { lines: [cut(text)], small: true };
+  return { lines: [cut(text.slice(0, space)), cut(text.slice(space + 1).trim())], small: true };
 }
 
 /** Dot radius between about 2.1 and 6.7 px depending on power (for the "size" style). */

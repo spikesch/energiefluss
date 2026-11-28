@@ -16,6 +16,13 @@ describe("formatting", () => {
   it("negative keeps sign", () => expect(fmtPower(-300)).toBe("-300 W"));
   it("unknown dash", () => expect(fmtPower(null)).toBe("–"));
   it("short names", () => expect(shortName("Waschmaschine", 8)).toBe("Waschma…"));
+  it("short names keep a number at the end", () => {
+    expect(shortName("Speicher 3", 9)).toBe("Speich… 3");
+    expect(shortName("Speicher 3", 11)).toBe("Speicher 3");
+    expect(shortName("Notstrom – Speicher 4", 15)).toBe("Notstrom – S… 4");
+    expect(shortName("Klimaanlage12", 9)).toBe("Klimaa…12");
+    expect(shortName("123456789012", 9)).toBe("12345678…");
+  });
 });
 
 describe("flow", () => {
@@ -94,10 +101,15 @@ describe("fitLabel", () => {
     expect(r.lines[1].endsWith("…")).toBe(true);
     expect(r.lines.every((l) => l.length <= 19)).toBe(true);
   });
-  it("one long word is split hard", () => {
-    const r = fitLabel("Waschmaschinensteckdosenleistung");
-    expect(r.lines[0]).toBe("Waschmaschinensteck");
-    expect(r.lines[1].length).toBeLessThanOrEqual(19);
+  it("never breaks inside a word", () => {
+    // one word: a single small line, cut only if even that is too long
+    expect(fitLabel("Wasserkocher", 8, 12)).toEqual({ lines: ["Wasserkocher"], small: true });
+    expect(fitLabel("Waschmaschinensteckdosenleistung")).toEqual({ lines: ["Waschmaschinenstec…"], small: true });
+    // first word too long for a line: it is cut, the rest goes below
+    expect(fitLabel("Waschmaschinensteckdose Keller", 12, 15)).toEqual({
+      lines: ["Waschmaschinen…", "Keller"],
+      small: true,
+    });
   });
 });
 

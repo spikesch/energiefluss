@@ -2,24 +2,6 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
-## 0.6.5
-
-**Deutsch**
-
-- Glas-Karte: Das Auto an der Wallbox wird nicht mehr unten abgeschnitten, wenn keine Batterie eingerichtet ist – die Karte wird so hoch wie nötig.
-- Gekürzte Namen behalten eine Nummer am Ende („Speich… 3“ statt „Speicher…“), so lassen sich ähnlich benannte Batterien unterscheiden.
-- Verbrauchernamen werden nicht mehr mitten im Wort getrennt („Wasserkoch / er“). Ein langes Wort bleibt eine kleinere Zeile, nur wenn nötig mit „…“.
-- Glas-Karte: Die Namensspalte reicht näher an die Zahlen heran, mehr Namen passen in eine Zeile.
-- Die Karten zeichnen sich nur noch neu, wenn sich einer ihrer eigenen Sensoren ändert – nicht mehr bei jeder Änderung irgendwo in Home Assistant. Spart Rechenleistung, besonders auf Wand-Tablets.
-
-**English**
-
-- Glass card: the car at the wallbox is no longer cut off at the bottom when no battery is set up – the card grows as tall as needed.
-- Shortened names keep a number at their end ("Speich… 3" instead of "Speicher…"), so similarly named batteries can be told apart.
-- Load names are no longer broken inside a word ("Wasserkoch / er"). A long word stays one smaller line, with "…" only if needed.
-- Glass card: the name column reaches closer to the numbers, more names fit on one line.
-- The cards only redraw when one of their own sensors changes – no longer on every change anywhere in Home Assistant. Saves CPU, especially on wall tablets.
-
 ## 0.7.0
 
 **Deutsch**
@@ -37,6 +19,24 @@
 - Only real power values (W, kW): meter readings in kWh or percentages are no longer read as watts; the settings warn about them.
 - Glass card: the house sends every load its own train again (in source colours) instead of one shared train up to the list.
 - Folded lists show the biggest consumers right now instead of the biggest daily consumers.
+
+## 0.6.5
+
+**Deutsch**
+
+- Glas-Karte: Das Auto an der Wallbox wird nicht mehr unten abgeschnitten, wenn keine Batterie eingerichtet ist – die Karte wird so hoch wie nötig.
+- Gekürzte Namen behalten eine Nummer am Ende („Speich… 3“ statt „Speicher…“), so lassen sich ähnlich benannte Batterien unterscheiden.
+- Verbrauchernamen werden nicht mehr mitten im Wort getrennt („Wasserkoch / er“). Ein langes Wort bleibt eine kleinere Zeile, nur wenn nötig mit „…“.
+- Glas-Karte: Die Namensspalte reicht näher an die Zahlen heran, mehr Namen passen in eine Zeile.
+- Die Karten zeichnen sich nur noch neu, wenn sich einer ihrer eigenen Sensoren ändert – nicht mehr bei jeder Änderung irgendwo in Home Assistant. Spart Rechenleistung, besonders auf Wand-Tablets.
+
+**English**
+
+- Glass card: the car at the wallbox is no longer cut off at the bottom when no battery is set up – the card grows as tall as needed.
+- Shortened names keep a number at their end ("Speich… 3" instead of "Speicher…"), so similarly named batteries can be told apart.
+- Load names are no longer broken inside a word ("Wasserkoch / er"). A long word stays one smaller line, with "…" only if needed.
+- Glass card: the name column reaches closer to the numbers, more names fit on one line.
+- The cards only redraw when one of their own sensors changes – no longer on every change anywhere in Home Assistant. Saves CPU, especially on wall tablets.
 
 ## 0.6.4
 

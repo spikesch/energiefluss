@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.7.1
+
+**Deutsch**
+
+- Glas-Karte: Vom Haus zu den Verbrauchern fährt wieder ein Zug pro Hausausgang, schon passend zusammengestellt: Jede Kugel gehört einem Verbraucher und biegt an seiner Abzweigung ab, der Rest fährt weiter – in den Farben der Herkunft. Vorher fuhr ohne „Animation: Größe“ jeder Verbraucher einen eigenen Zug, die sich auf der gemeinsamen Leitung überlagerten.
+
+**English**
+
+- Glass card: from the house to the loads there is again one train per house exit, already made up to fit: every ball belongs to a load and turns off at its branch, the rest rides on – in the colours of the source. Before, without "Animation: size", every load ran its own train and they overlapped on the shared line.
+
 ## 0.7.0
 
 **Deutsch**

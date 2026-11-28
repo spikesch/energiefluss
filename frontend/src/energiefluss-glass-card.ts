@@ -867,7 +867,12 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     return kinds.map((k, i) => ({ r: BALL_R[k], colour: tints[i] }));
   }
 
-  // the house sends every load its own train, already made up to fit it
+  // the house makes up one train for a list: every ball already belongs to
+  // one load and turns off at its station (wagons, in the colours of their source)
+  protected get _wagonLists(): boolean {
+    return true;
+  }
+
   protected get _feedAsOne(): boolean {
     return false;
   }

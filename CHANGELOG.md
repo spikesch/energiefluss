@@ -2,6 +2,18 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.4.6
+
+**Deutsch**
+
+- Glas-Karte: Die Kugeln zu den Verbrauchern zeigen jetzt immer ihre Herkunft – gelb PV, grün Batterie, blau Netz, so wie der Strom gerade ins Haus kommt – statt der Farbe der Gruppe.
+- Glas-Karte: Eingerückte Geräte (z. B. Wasserkocher in Neubau) bekommen ihren eigenen Zug; der Zug des Elterngeräts zählt nur, was bei ihm selbst bleibt.
+
+**English**
+
+- Glass card: the balls to the loads now always show where the power comes from – yellow PV, green battery, blue grid, as it flows into the house right now – instead of the group colour.
+- Glass card: contained loads (e.g. a kettle inside a sub-meter) get their own train; the parent's train counts only what stays with it.
+
 ## 0.4.5
 
 **Deutsch**

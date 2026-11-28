@@ -1052,14 +1052,19 @@ export class EnergieflussCard extends LitElement {
           const tip = `${l.name} · enthalten in ${rows[l.parentRow ?? 0].name}`;
           return svg`
             ${this._branch(`M ${LOAD_X0 + 4} ${top} V ${y + mid} H ${LOAD_X0 + 10}`, colour, "child")}
-            ${this._bySize ? wagonDots(childPath(l, i), l.w, i) : nothing}
+            ${this._bySize ? wagonDots(childPath(l, i), l.w, i) : split ? this._feedTrain(childPath(l, i), l.w ?? 0, colour, l.source) : nothing}
             <g opacity=${idle ? 0.45 : 0.85} class="tap" data-entity=${l.entity}>
               ${this._nameBox(l.name, y, colour, tip, 12)}
               ${this._valueCell(LOAD_XP - LOAD_PW, y + 1, LOAD_PW, R - 4, colour, fmtPower(l.w, this._loc), 9, "power")}
             </g>
             ${this._tap(l.today, this._valueCell(LOAD_X1 - LOAD_EW, y + 1, LOAD_EW, R - 4, colour, fmtEnergy(num(this._s(l.today)), this._loc), 8.5, "energy"))}`;
         }
-        const dots = this._bySize ? wagonDots(path(l, i), own(i), i) : this._dot(path(l, i), colour, l.w, true, 2.4);
+        // a look that splits the feed colours each load's train by where its power comes from
+        const dots = this._bySize
+          ? wagonDots(path(l, i), own(i), i)
+          : split
+            ? this._feedTrain(path(l, i), (l.more ? l.w : own(i)) ?? 0, colour, l.source)
+            : this._dot(path(l, i), colour, l.w, true, 2.4);
         if (l.more) {
           const group = l.more.group;
           return svg`

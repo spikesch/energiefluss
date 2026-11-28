@@ -2,6 +2,24 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.6.1
+
+**Deutsch**
+
+- Die Box mit den Notstrom-Geräten heißt jetzt „Notstrom“ statt nach der Batterie; bei zwei Notstrom-Batterien „Notstrom – <Batterie>“.
+- Speicher-Übersicht: zusätzlich die Leistung, die alle Batterien zusammen gerade aufnehmen (+) oder abgeben (−).
+- Preis am Netzmast farbig und dezent: blassrot beim Bezug, blassgrün bei der Einspeisevergütung.
+- Glas-Karte: Ändert sich die Leistung, springen die Kugeln nicht mehr – die laufenden fahren bis zur nächsten Station weiter, der neue Zug startet am Anfang der Leitung.
+- Glas-Solarmodul passt sich der Zahl der Stränge an: 4 (oder 3) in Vierteln, 2 links und rechts, bei einem Strang stehen die Zahlen direkt auf dem Glas.
+
+**English**
+
+- The box with the backup loads is now called "Notstrom" (backup) instead of after the battery; with two backup batteries "Notstrom – <battery>".
+- Storage overview: also the power all batteries together take in (+) or give out (−) right now.
+- Price at the grid pylon in subtle colours: pale red while buying, pale green for the feed-in tariff.
+- Glass card: when the power changes, the balls no longer jump – those on their way ride on to the next station, the new train starts at the beginning of the line.
+- Glass solar panel follows the number of strings: 4 (or 3) in quarters, 2 left and right, with one string the numbers sit right on the glass.
+
 ## 0.6.0
 
 **Deutsch**

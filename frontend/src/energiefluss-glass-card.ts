@@ -4,6 +4,7 @@
 // Everything animated stays filter-free so the card stays light on the CPU.
 
 import { css, svg, nothing, type PropertyValues, type SVGTemplateResult } from "lit";
+import { keyed } from "lit/directives/keyed.js";
 import {
   EnergieflussCard,
   LOAD_PW,
@@ -110,9 +111,15 @@ const onFace = (u: number, v: number): Pt2 => {
   const bottom = [bl[0] + (br[0] - bl[0]) * u, bl[1] + (br[1] - bl[1]) * u];
   return [top[0] + (bottom[0] - top[0]) * v, top[1] + (bottom[1] - top[1]) * v];
 };
-/** The four string labels as quadrilaterals filling the face's quarters with an even
- *  gap to the frame and to each other; order: top left, top right, bottom left, bottom right. */
-const LABELS = (() => {
+interface StringLabel {
+  corners: Pt2[];
+  middle: Pt2;
+  size: Pt2;
+}
+/** The string labels as quadrilaterals on the face with an even gap to the frame and
+ *  to each other, sized by the number of strings: 3-4 fill the quarters (top left, top
+ *  right, bottom left, bottom right), 2 the left and right half, 1 the whole face. */
+const labelsFor = (n: number): StringLabel[] => {
   const [tl, tr, , bl] = FACE;
   const w = Math.hypot(tr[0] - tl[0], tr[1] - tl[1]);
   const h = Math.hypot(bl[0] - tl[0], bl[1] - tl[1]);
@@ -120,24 +127,20 @@ const LABELS = (() => {
   const ev = (PANEL_FRAME + LABEL_GAP) / h;
   const gu = LABEL_GAP / w; // half of it on each side of the middle
   const gv = LABEL_GAP / h;
-  const us = [
-    [eu, 0.5 - gu / 2],
-    [0.5 + gu / 2, 1 - eu],
+  const halves = (e: number, g: number) => [
+    [e, 0.5 - g / 2],
+    [0.5 + g / 2, 1 - e],
   ];
-  const vs = [
-    [ev, 0.5 - gv / 2],
-    [0.5 + gv / 2, 1 - ev],
-  ];
-  return [0, 1, 2, 3].map((i) => {
-    const [u0, u1] = us[i % 2];
-    const [v0, v1] = vs[Math.floor(i / 2)];
-    return {
+  const us = n === 1 ? [[eu, 1 - eu]] : halves(eu, gu);
+  const vs = n <= 2 ? [[ev, 1 - ev]] : halves(ev, gv);
+  return vs.flatMap(([v0, v1]) =>
+    us.map(([u0, u1]) => ({
       corners: [onFace(u0, v0), onFace(u1, v0), onFace(u1, v1), onFace(u0, v1)],
       middle: onFace((u0 + u1) / 2, (v0 + v1) / 2),
       size: [(u1 - u0) * w, (v1 - v0) * h] as Pt2,
-    };
-  });
-})();
+    })),
+  );
+};
 const PV_BOX_Y = 82;
 const PV_MID: [number, number] = [104, PV_BOX_Y + 26]; // "PV gesamt", bottom edge
 const HOUSE_Y = 58; // top of the house value box (higher than in the classic look)
@@ -309,9 +312,14 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   }
 
   // denser lists: rows of 15 instead of 22
-  // the string labels sit on the middles of the panel's quarters
+  /** The string labels for the configured number of strings. */
+  private get _labels(): StringLabel[] {
+    return labelsFor(Math.min(Math.max(this._layout?.solar.strings.length ?? 4, 1), 4));
+  }
+
+  // the string labels sit on the middles of their part of the panel
   protected get _stringPos(): number[][] {
-    return LABELS.map(({ middle: [x, y] }) => [x - LABEL_W / 2, y - LABEL_H / 2]);
+    return this._labels.map(({ middle: [x, y] }) => [x - LABEL_W / 2, y - LABEL_H / 2]);
   }
 
 
@@ -382,12 +390,38 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   private _lastSeen = new Map<string, { colour: string; b: Ball }>();
   private _routeIdx = new Map<string, number>();
   private _ghosts: { colour: string; route: string; forward: boolean; r: number; from: number; dur: number; start: number; until: number }[] = [];
+  // When the power on a line changes, its train gets other balls and another
+  // rhythm. Changing a running animation would make the balls jump to another
+  // place; instead the new train starts now at the beginning of the line (its
+  // epoch) and the old balls ride on to the next station as ghosts.
+  private _epochs = new Map<string, number>();
+  private _nextEpochs = new Map<string, number>();
+  private _now = 0;
 
   protected render() {
     this._lastSeen = this._seen;
     this._seen = new Map();
     this._routeIdx = new Map();
-    return super.render();
+    this._now = (this.renderRoot?.querySelector("svg") as SVGSVGElement | null)?.getCurrentTime() ?? 0;
+    this._nextEpochs = new Map();
+    const out = super.render();
+    this._epochs = this._nextEpochs;
+    return out;
+  }
+
+  /** Start time of the train with this rhythm on `route` (see _epochs). */
+  private _epoch(route: string, forward: boolean, period: number, travel: number): number {
+    const key = `${forward ? ">" : "<"}${period.toFixed(3)}|${travel.toFixed(3)}|${route}`;
+    let epoch = this._nextEpochs.get(key) ?? this._epochs.get(key);
+    if (epoch === undefined) epoch = this._now > 0 ? Math.ceil(this._now * 20) / 20 : 0;
+    this._nextEpochs.set(key, epoch);
+    return epoch;
+  }
+
+  /** Epoch of a train already drawn in this render (either direction), else 0. */
+  private _epochOf(route: string, period: number, travel: number): number {
+    const tail = `${period.toFixed(3)}|${travel.toFixed(3)}|${route}`;
+    return this._nextEpochs.get(`>${tail}`) ?? this._nextEpochs.get(`<${tail}`) ?? 0;
   }
 
   protected updated(changed: PropertyValues): void {
@@ -397,7 +431,9 @@ export class EnergieflussGlassCard extends EnergieflussCard {
     const t = svgEl.getCurrentTime();
     let added = false;
     for (const [key, { colour, b }] of this._lastSeen) {
-      if (this._seen.has(key) || t < b.begin) continue;
+      const now = this._seen.get(key)?.b;
+      const same = now && now.begin === b.begin && now.period === b.period && now.travel === b.travel && now.forward === b.forward;
+      if (same || t < b.begin) continue;
       const local = (t - b.begin) % b.period;
       if (local >= b.travel) continue; // waiting for the next train, not on its way
       const dur = b.travel - local;
@@ -524,23 +560,28 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   }
 
   /** One ball riding its route once per period. */
-  protected _ball(colour: string, b: Ball): SVGTemplateResult {
-    // remember it: if it is gone after the next update, it rides its way to the end
+  protected _ball(colour: string, ball: Ball): SVGTemplateResult {
+    const b = { ...ball, begin: ball.begin + this._epoch(ball.route, ball.forward, ball.period, ball.travel) };
+    // remember it: if it is gone (or runs differently) after the next update, it rides its way to the end
     const n = this._routeIdx.get(b.route) ?? 0;
     this._routeIdx.set(b.route, n + 1);
     this._seen.set(`${b.forward ? ">" : "<"}${b.route}#${n}`, { colour, b });
     const k = (b.travel / b.period).toFixed(4);
     const dur = `${b.period.toFixed(2)}s`;
     const begin = `${b.begin.toFixed(2)}s`;
-    return this._orb(
-      b.r,
-      colour,
-      svg`<animateMotion dur=${dur} begin=${begin} repeatCount="indefinite" calcMode="linear" rotate="auto"
-          keyPoints=${b.forward ? "0;1;1" : "1;0;0"} keyTimes=${`0;${k};1`} path=${b.route} />
-        <animate attributeName="opacity" dur=${dur} begin=${begin} repeatCount="indefinite" calcMode="discrete"
-          values="1;0" keyTimes=${`0;${k}`} />`,
-      true,
-    );
+    // a new rhythm gets new animation elements (changing running ones makes them jump)
+    return keyed(
+      `${begin}|${dur}|${k}|${b.forward}`,
+      this._orb(
+        b.r,
+        colour,
+        svg`<animateMotion dur=${dur} begin=${begin} repeatCount="indefinite" calcMode="linear" rotate="auto"
+            keyPoints=${b.forward ? "0;1;1" : "1;0;0"} keyTimes=${`0;${k};1`} path=${b.route} />
+          <animate attributeName="opacity" dur=${dur} begin=${begin} repeatCount="indefinite" calcMode="discrete"
+            values="1;0" keyTimes=${`0;${k}`} />`,
+        true,
+      ),
+    ) as unknown as SVGTemplateResult;
   }
 
   /**
@@ -585,7 +626,8 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   protected _arrivals(route: string, w: number | null): Hit[] {
     if (w === null || Math.abs(w) < MIN_FLOW_W) return [];
     const { radii, begins, travel, period } = this._trainOf(route, w);
-    return begins.map((b, i) => ({ at: b + travel, period, big: radii[i] === BALL_BIG }));
+    const epoch = this._epochOf(route, period, travel);
+    return begins.map((b, i) => ({ at: epoch + b + travel, period, big: radii[i] === BALL_BIG }));
   }
 
   /**
@@ -674,28 +716,37 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       height=${(SOLAR_IMAGE.height * SOLAR_K).toFixed(1)} />`;
   }
 
-  /** One PV string: a glass label filling its quarter of the panel, lying in the
-   *  panel's plane, with the same gap to the frame and to its neighbours. */
+  /** One PV string: a glass label filling its part of the panel, lying in the
+   *  panel's plane, with the same gap to the frame and to its neighbours. A single
+   *  string has no label: its numbers sit right on the glass panel. */
   protected _stringTile(x: number, y: number, entity: string, c: string): SVGTemplateResult {
     const mx = x + LABEL_W / 2;
     const my = y + LABEL_H / 2;
-    const label = LABELS.reduce((a, b) =>
+    const labels = this._labels;
+    const single = labels.length === 1;
+    const label = labels.reduce((a, b) =>
       Math.hypot(b.middle[0] - mx, b.middle[1] - my) < Math.hypot(a.middle[0] - mx, a.middle[1] - my) ? b : a,
     );
     const pts = label.corners.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(" ");
     const [ax, ay] = SOLAR_IMAGE.across;
     const [dx, dy] = SOLAR_IMAGE.down;
-    const [, lh] = label.size;
+    // bigger parts of the panel get bigger numbers; the text block stays centred
+    const value = labels.length === 1 ? 17 : labels.length === 2 ? 14 : 12;
+    const name = labels.length === 1 ? 9 : labels.length === 2 ? 8 : 7.5;
+    const vy = value * 0.35;
     return svg`
-      <polygon points=${pts} fill="#020a14" fill-opacity="0.35" transform="translate(0.8 1.6)" />
-      <polygon points=${pts} fill=${c} fill-opacity="0.12" />
-      <polygon points=${pts} fill="url(#ef-slab)" stroke=${c} stroke-opacity="0.6" stroke-width="0.8"
-        stroke-linejoin="round" />
-      <g transform=${`matrix(${ax} ${ay} ${dx} ${dy} ${mx.toFixed(1)} ${my.toFixed(1)})`}>
-        <text x="0" y=${-lh / 2 + lh * 0.52} text-anchor="middle" class="val" font-size=${this._fs(12)} font-weight="600"
+      ${single
+        ? nothing
+        : svg`<polygon points=${pts} fill="#020a14" fill-opacity="0.35" transform="translate(0.8 1.6)" />
+          <polygon points=${pts} fill=${c} fill-opacity="0.12" />
+          <polygon points=${pts} fill="url(#ef-slab)" stroke=${c} stroke-opacity="0.6" stroke-width="0.8"
+            stroke-linejoin="round" />`}
+      <g transform=${`matrix(${ax} ${ay} ${dx} ${dy} ${mx.toFixed(1)} ${my.toFixed(1)})`}
+        style=${single ? "filter: drop-shadow(0 1px 1.5px rgba(0, 6, 15, 0.8))" : nothing}>
+        <text x="0" y=${vy} text-anchor="middle" class="val" font-size=${this._fs(value)} font-weight="600"
           >${fmtPower(this._w(entity), this._loc)}</text>
-        <text x="0" y=${-lh / 2 + lh * 0.84} text-anchor="middle" class="tiny" style=${`font-size:${this._fs(7.5)}px`}
-          >${shortName(this._name(entity), 16)}</text>
+        <text x="0" y=${vy + name + 3} text-anchor="middle" class="tiny" style=${`font-size:${this._fs(name)}px`}
+          >${shortName(this._name(entity), labels.length === 4 || labels.length === 3 ? 16 : 22)}</text>
       </g>`;
   }
 
@@ -984,6 +1035,11 @@ export class EnergieflussGlassCard extends EnergieflussCard {
    * glass cable into the inverter, the grid tile below it and the wallbox
    * below that.
    */
+  // pale on the dark glass: present, but not loud
+  protected _priceColour(exporting: boolean): string {
+    return exporting ? "#a6dcb2" : "#eea6a2";
+  }
+
   protected _grid(): SVGTemplateResult {
     const c = this._c.grid;
     const inv = this._invX;
@@ -1013,7 +1069,8 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       <text x=${TILE_X + TILE_W / 2} y=${y + 11} text-anchor="middle" class="val" font-size=${this._fs(11.5)} font-weight="600"
         >${power}</text>
       ${cents !== null
-        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" class="dim" style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
+        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" fill=${this._priceColour(exporting)} fill-opacity="0.85"
+            style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
         : nothing}
       ${rows.length
         ? svg`<line x1=${TILE_X + 3} x2=${TILE_X + TILE_W - 3} y1=${sep} y2=${sep} class="sep" stroke=${c} />`

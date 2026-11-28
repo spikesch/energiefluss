@@ -674,9 +674,16 @@ export class EnergieflussCard extends LitElement {
         storeW,
         STORE_H,
         c,
-        `${storeW >= 120 ? "Speicher " : ""}${fmtPercent(soc, this._loc)}${
-          energy !== null && storeW >= 80 ? ` · ${fmtEnergy(energy, this._loc)}` : ""
-        }`,
+        [
+          `${storeW >= 120 ? "Speicher " : ""}${fmtPercent(soc, this._loc)}`,
+          energy !== null && storeW >= 80 ? fmtEnergy(energy, this._loc) : "",
+          // what all batteries together take in or give out right now
+          total !== null && Math.abs(total) >= MIN_FLOW_W && storeW >= 110
+            ? `${storeW >= 200 ? (total > 0 ? "lädt " : "entlädt ") : total > 0 ? "+" : "−"}${fmtPower(Math.abs(total), this._loc)}`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" · "),
         storeW >= 150 ? 11 : 10,
       ))}
     `;
@@ -853,7 +860,9 @@ export class EnergieflussCard extends LitElement {
           ? { pref: b.top + 57, lo: b.top + 46, hi: b.top + 70 }
           : { pref: b.top + 68, lo: b.top + 64, hi: b.top + 72 };
       add(
-        shortName(b.name, 12), // red colour + feed line from the battery mark it as backup
+        // red colour + feed line from the battery mark it as backup; with two
+        // backup batteries the name tells them apart
+        feeds.length > 1 ? `Notstrom – ${shortName(b.name, 10)}` : "Notstrom",
         c.backup,
         b.backup ?? [],
         this._sumW(b.backup ?? []),
@@ -1208,6 +1217,11 @@ export class EnergieflussCard extends LitElement {
     `;
   }
 
+  /** Colour of the current price: buying (pale red) or selling (pale green). */
+  protected _priceColour(exporting: boolean): string {
+    return exporting ? "#6fae7c" : "#c9706b";
+  }
+
   /** Current grid values: power, direction, price and today's import / export. */
   protected _gridData() {
     const L = this._layout!;
@@ -1238,7 +1252,7 @@ export class EnergieflussCard extends LitElement {
       ${this._tap(this._layout!.entities.grid_power, svg`${this._panel(10, 192, 74, 40, c)}
         <text x="47" y=${cents === null ? 217 : 209} text-anchor="middle" class="val" font-size=${this._fs(13)}>${power}</text>`)}
       ${cents !== null
-        ? svg`<text x="47" y="225" text-anchor="middle" class="tiny" fill=${c}>${fmtCents(cents, this._loc)}</text>`
+        ? svg`<text x="47" y="225" text-anchor="middle" class="tiny" fill=${this._priceColour(exporting)}>${fmtCents(cents, this._loc)}</text>`
         : nothing}
       <text x="90" y="207" class="tiny">${label}</text>
       ${this._icon(ICON_TOWER, 27, 240, 40, c)}

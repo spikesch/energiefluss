@@ -54,6 +54,7 @@ Daneben gibt es **Notstrom-Verbraucher**: Geräte, die direkt am eigenen Ausgang
 
 - Einrichtung in einer eigenen Seite *Wattrio* in der Seitenleiste und im Dialog „Karte bearbeiten“.
 - *Sensoren erkennen*: schlägt PV-Strings, Akkus, Netz, Preise, Wallbox und Verbraucher aus deinen vorhandenen Entitäten vor.
+- Kryptische Sensornamen: Die Suche zeigt, wo ein Sensor schon verwendet wird (Energie-Dashboard, Dashboards, Helfer, Automationen …) und wie er dort heißt. Verbraucher können diesen oder einen eigenen Namen bekommen, ohne dass der Sensor umbenannt wird.
 - PV: bis zu 4 Strings, Gesamtleistung, Ertrag heute, Prognose Rest.
 - Akkus: bis zu 5, jeweils mit Leistung, Ladestand und Kapazität; Leistung als ein Sensor mit Vorzeichen oder als getrennte Sensoren für Laden und Entladen.
 - Netz: ein Sensor mit Vorzeichen oder getrennt Bezug / Einspeisung; aktueller Preis (z. B. Tibber) und Einspeisevergütung.
@@ -246,6 +247,7 @@ The setup dialog has a single page: the system's **name** and four switches – 
 
 - Section by section – *Netz, Batteriespeicher, Photovoltaik, Dynamischer Stromtarif, E-Auto / Wallbox, Verbraucher*: check, then **Speichern** (save) at the bottom. The section gets a ✓, closes, and the next one opens.
 - Every section asks *Ja / Nein* (yes / no) and has its own **Sensoren erkennen** (detect sensors) suggesting only matching sensors. Backup power is set right at each battery; solar takes at most 4 strings.
+- Cryptic sensor names: the search shows where a sensor is already used (energy dashboard, dashboards, helpers, automations …) and what it is called there. Loads can take that name or one of your own, without renaming the sensor.
 - Under **Allgemein** (general) switch the look between **Glas** (default) and **Klassik**.
 - Once all sections are done, the Wattrio page shows the energy flow straight away; *Einstellungen* (settings) top right.
 - **Card on your own dashboard:** edit the dashboard → *Add card* → search for **Wattrio** → *Wattrio Energiefluss Glas* or *Klassik*. If it is not in the list, reload the page once.

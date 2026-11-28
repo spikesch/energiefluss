@@ -2,6 +2,20 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.5.0
+
+**Deutsch**
+
+- *Sensoren erkennen* zeigt jetzt, wo ein Sensor in Home Assistant schon vorkommt – Energie-Dashboard, Dashboards, Helfer, Automationen, Skripte, Szenen, Gruppen – und wie er dort heißt (auch Aliasse für Sprachassistenten).
+- Bei möglichen Verbrauchern stehen zusätzlich Entität, aktuelle Leistung, Raum und Gerät.
+- Verbraucher können einen eigenen Namen bekommen: einen gefundenen anklicken oder selbst eintragen (Abschnitt *Verbraucher* → *Namen auf der Karte*). Er gilt für die Karte und die Tageswert-Sensoren; der Sensor selbst wird nicht umbenannt.
+
+**English**
+
+- *Detect sensors* now shows where else a sensor is used in Home Assistant – energy dashboard, dashboards, helpers, automations, scripts, scenes, groups – and what it is called there (voice assistant aliases included).
+- Suggested loads also show the entity id, current power, area and device.
+- Loads can have their own name: click one that was found or type it (section *Verbraucher* → *Namen auf der Karte*). It is used on the card and for the daily energy sensors; your sensor itself is not renamed.
+
 ## 0.4.6
 
 **Deutsch**

@@ -36,6 +36,7 @@ from .const import (
     CONF_BATTERY_NAME,
     CONF_FIXED_LOADS,
     CONF_FLEXIBLE_LOADS,
+    CONF_LOAD_NAMES,
     CONF_GRID_EXPORT_PRICE,
     CONF_GRID_EXPORT_PRICE_FIXED,
     CONF_GRID_EXPORT_TODAY,
@@ -58,6 +59,7 @@ from .features import wanted_power_sensors
 from .first_setup import async_sidebar_on_top, notify
 from .hub import EnergieflussHub
 from .schema import normalize_options
+from .usage_ha import async_usage
 
 PLATFORMS = [Platform.SENSOR]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -86,7 +88,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             embed_iframe=False,
         )
 
-    for command in (ws_get_config, ws_list_instances, ws_get_options, ws_save_options, ws_set_look, ws_suggest):
+    for command in (ws_get_config, ws_list_instances, ws_get_options, ws_save_options, ws_set_look, ws_suggest, ws_usage):
         websocket_api.async_register_command(hass, command)
     return True
 
@@ -225,6 +227,8 @@ def _describe(hass: HomeAssistant, entry: EnergieflussConfigEntry) -> dict[str, 
             "fixed": with_today(cfg.get(CONF_FIXED_LOADS)),
             "flexible": with_today(cfg.get(CONF_FLEXIBLE_LOADS)),
         },
+        # own names of loads, shown instead of the sensor's name
+        "names": dict(cfg.get(CONF_LOAD_NAMES) or {}),
     }
 
 
@@ -347,3 +351,14 @@ def ws_suggest(
 ) -> None:
     """Suggest sensors for the editor from all sensor entities."""
     connection.send_result(msg["id"], suggestions(hass))
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): f"{DOMAIN}/usage", vol.Required("entity_ids"): [cv.entity_id]}
+)
+@websocket_api.async_response
+async def ws_usage(
+    hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]
+) -> None:
+    """Where else the sensors are used and what they are called there."""
+    connection.send_result(msg["id"], await async_usage(hass, msg["entity_ids"], connection.user.is_admin))

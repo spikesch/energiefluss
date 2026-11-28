@@ -50,6 +50,8 @@ CONF_BACKUP_LOADS = "backup_loads"
 # Loads already contained in another load (e.g. a kettle measured inside a
 # sub-distribution): child entity -> parent entity. Not counted twice.
 CONF_LOAD_PARENTS = "load_parents"
+# Own names of loads (entity -> name), shown instead of the sensor's name.
+CONF_LOAD_NAMES = "load_names"
 CONF_WALLBOX_NAME = "wallbox_name"
 CONF_WALLBOX_POWER = "wallbox_power"
 CONF_WALLBOX_SOC = "wallbox_soc"

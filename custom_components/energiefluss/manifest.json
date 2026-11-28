@@ -1,6 +1,14 @@
 {
   "domain": "energiefluss",
   "name": "Wattrio Energiefluss",
+  "after_dependencies": [
+    "automation",
+    "energy",
+    "group",
+    "lovelace",
+    "scene",
+    "script"
+  ],
   "codeowners": [
     "@spikesch"
   ],
@@ -16,5 +24,5 @@
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/spikesch/energiefluss/issues",
   "requirements": [],
-  "version": "0.4.6"
+  "version": "0.5.0"
 }

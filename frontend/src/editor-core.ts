@@ -60,6 +60,8 @@ interface Options {
   fixed_loads?: string[];
   flexible_loads?: string[];
   load_parents?: Record<string, string>;
+  /** Own names of loads, shown instead of the sensor's name. */
+  load_names?: Record<string, string>;
   wallbox_name?: string;
   wallbox_power?: string;
   wallbox_soc?: string;
@@ -94,6 +96,14 @@ interface Suggestions {
   loads?: { entity: string; name: string; source: string }[];
 }
 
+/** Where else a sensor appears in Home Assistant, and what it is called there. */
+interface Usage {
+  names: { name: string; where: string }[];
+  used: string[];
+  area?: string;
+  device?: string;
+}
+
 export interface Instance {
   entry_id: string;
   title: string;
@@ -104,6 +114,7 @@ type Schema = { name: string; selector: Record<string, unknown> }[];
 
 const MAX_BATTERIES = 5;
 const MAX_BACKUP_BATTERIES = 2;
+const MAX_PLACES = 3; // places listed per sensor before "+ n weitere"
 
 /** Sections; the optional ones ask "Ja / Nein" first. */
 type Topic = "general" | "grid" | "solar" | "battery" | "wallbox" | "tariff" | "loads";
@@ -317,6 +328,27 @@ function errorText(err: unknown): string {
 /** Fired on window after an instance was saved and reloaded; cards refresh. */
 export const UPDATED_EVENT = "energiefluss-updated";
 
+/** Every sensor a suggestion is about. */
+function suggestedEntities(sg: Suggestions): string[] {
+  const ids: (string | undefined)[] = [
+    ...(sg.solar_strings?.value ?? []),
+    sg.solar_today?.value,
+    sg.solar_forecast_remaining?.value,
+    sg.grid?.value.grid_power,
+    sg.grid?.value.grid_import_power,
+    sg.grid?.value.grid_export_power,
+    sg.grid_price?.value,
+    sg.grid_import_today?.value,
+    sg.grid_export_today?.value,
+    sg.home_power?.value,
+    sg.wallbox_power?.value,
+    sg.wallbox_soc?.value,
+    ...(sg.batteries ?? []).flatMap(({ value: b }) => [b.power, b.charge_power, b.discharge_power, b.soc]),
+    ...(sg.loads ?? []).map((l) => l.entity),
+  ];
+  return [...new Set(ids.filter((e): e is string => !!e))];
+}
+
 // ---------------------------------------------------------------------------
 // <energiefluss-editor>: the sections, live hints and save/discard actions
 // ---------------------------------------------------------------------------
@@ -338,6 +370,8 @@ export class EnergieflussEditor extends LitElement {
   @state() private _computed: string[] = [];
   @state() private _suggestions?: Suggestions;
   @state() private _detecting = false;
+  @state() private _usage: Record<string, Usage> = {};
+  private _usageAsked = new Set<string>();
   @state() private _look: "glass" | "classic" = "glass";
   /** Open sections (all closed at first). */
   @state() private _open = new Set<Topic>();
@@ -363,6 +397,7 @@ export class EnergieflussEditor extends LitElement {
       this._loadedFor = this.entryId;
       void this._load();
     }
+    if (this._open.has("loads")) void this._loadUsage(this._linkableLoads());
   }
 
   private async _load(): Promise<void> {
@@ -447,8 +482,22 @@ export class EnergieflussEditor extends LitElement {
     this._detecting = true;
     try {
       this._suggestions = await this.hass.callWS<Suggestions>({ type: "energiefluss/suggest" });
+      void this._loadUsage(suggestedEntities(this._suggestions));
     } finally {
       this._detecting = false;
+    }
+  }
+
+  /** Ask once per sensor where else it is used. The hints are optional: on errors none are shown. */
+  private async _loadUsage(ids: string[]): Promise<void> {
+    const missing = ids.filter((e) => !this._usageAsked.has(e));
+    if (!missing.length || !this.hass) return;
+    missing.forEach((e) => this._usageAsked.add(e));
+    try {
+      const found = await this.hass.callWS<Record<string, Usage>>({ type: "energiefluss/usage", entity_ids: missing });
+      this._usage = { ...this._usage, ...found };
+    } catch (err) {
+      console.warn("Wattrio: usage search failed", err);
     }
   }
 
@@ -667,8 +716,92 @@ export class EnergieflussEditor extends LitElement {
   private get _loc(): string {
     return this.hass?.locale?.language ?? "de";
   }
-  private _name(id: string): string {
+  private _haName(id: string): string {
     return (this._s(id)?.attributes.friendly_name as string | undefined) ?? id;
+  }
+  private _name(id: string): string {
+    return this._draft.load_names?.[id] || this._haName(id);
+  }
+
+  // -- own names and where a sensor is used elsewhere -----------------------------
+  private _setLoadName(entity: string, name: string): void {
+    const names = { ...(this._draft.load_names ?? {}) };
+    if (name) names[entity] = name;
+    else delete names[entity];
+    const next: Options = { ...this._draft, load_names: names };
+    if (!Object.keys(names).length) delete next.load_names;
+    this._draft = next;
+  }
+
+  private _places(used: string[]): string {
+    const more = used.length - MAX_PLACES;
+    return used.slice(0, MAX_PLACES).join(", ") + (more > 0 ? ` + ${more} weitere` : "");
+  }
+
+  /** Read-only hint below a suggested grid, PV, battery, ... sensor. */
+  private _usageHint(entity: string): TemplateResult | typeof nothing {
+    const u = this._usage[entity];
+    if (!u?.names.length && !u?.used.length) return nothing;
+    const names = u.names.map((n) => `„${n.name}“ (${n.where})`).join(", ");
+    const text = names ? `heißt auch ${names}` : `verwendet in ${this._places(u.used)}`;
+    return html`<small>${this._haName(entity)}: ${text}</small>`;
+  }
+
+  /** Names found elsewhere as buttons: click to use one, click again to drop it. */
+  private _nameChips(entity: string): TemplateResult | typeof nothing {
+    const names = this._usage[entity]?.names ?? [];
+    if (!names.length) return nothing;
+    const current = this._draft.load_names?.[entity];
+    return html`<div class="chips">
+      <small>Heißt anderswo:</small>
+      ${names.map(
+        (n) => html`<button
+          class="chip ${current === n.name ? "on" : ""}"
+          aria-pressed=${current === n.name}
+          title="Diesen Namen in Wattrio verwenden"
+          @click=${() => this._setLoadName(entity, current === n.name ? "" : n.name)}
+        >
+          ${n.name}<span>${n.where}</span>
+        </button>`,
+      )}
+    </div>`;
+  }
+
+  private _usedLine(entity: string): TemplateResult | typeof nothing {
+    const used = this._usage[entity]?.used ?? [];
+    return used.length ? html`<small>Verwendet in: ${this._places(used)}</small>` : nothing;
+  }
+
+  /** "sensor.xyz · 45 W · Büro · Steckdose 3 · shelly": helps to recognise a cryptic sensor. */
+  private _facts(entity: string, source: string): string {
+    const u = this._usage[entity];
+    const w = watts(this._s(entity));
+    return [entity, w === null ? "" : fmtPower(w, this._loc), u?.area, u?.device, source].filter(Boolean).join(" · ");
+  }
+
+  private _namesEditor(): TemplateResult | typeof nothing {
+    const loads = this._linkableLoads();
+    if (!loads.length) return nothing;
+    return html`<div class="names">
+      <h3>Namen auf der Karte</h3>
+      <p class="hint">Leer lassen: der Name aus Home Assistant. Der Sensor selbst wird nicht umbenannt.</p>
+      ${loads.map(
+        (e) => html`<div class="name-row">
+          <label>
+            <span>${this._haName(e)}</span>
+            <input
+              type="text"
+              maxlength="60"
+              placeholder=${this._haName(e)}
+              .value=${this._draft.load_names?.[e] ?? ""}
+              @input=${(ev: Event) => this._setLoadName(e, (ev.target as HTMLInputElement).value)}
+              @change=${(ev: Event) => ev.stopPropagation()}
+            />
+          </label>
+          ${this._nameChips(e)}${this._usedLine(e)}
+        </div>`,
+      )}
+    </div>`;
   }
   private _powerLine(label: string, id: string | undefined, meaning?: string): TemplateResult | typeof nothing {
     if (!id) return nothing;
@@ -880,9 +1013,20 @@ export class EnergieflussEditor extends LitElement {
     </div>`;
   }
 
-  private _suggestRow(label: string, text: string, source: string, done: boolean, apply: () => void, action = "Übernehmen") {
+  private _suggestRow(
+    label: string,
+    text: string,
+    source: string,
+    done: boolean,
+    apply: () => void,
+    entities: (string | undefined)[],
+    action = "Übernehmen",
+  ) {
     return html`<div class="sg-row">
-      <div class="sg-text"><b>${label}</b><span>${text}</span><small>${source}</small></div>
+      <div class="sg-text">
+        <b>${label}</b><span>${text}</span><small>${source}</small>
+        ${entities.map((e) => (e ? this._usageHint(e) : nothing))}
+      </div>
       ${done ? html`<span class="sg-done">✓ gesetzt</span>` : html`<button @click=${apply}>${action}</button>`}
     </div>`;
   }
@@ -899,8 +1043,13 @@ export class EnergieflussEditor extends LitElement {
       const item = sg[key] as Suggestion<string> | undefined;
       if (!item) return;
       rows.push(
-        this._suggestRow(label, this._name(item.value), item.source, d[key] === item.value, () =>
-          this._apply({ [key]: item.value } as Partial<Options>),
+        this._suggestRow(
+          label,
+          this._name(item.value),
+          item.source,
+          d[key] === item.value,
+          () => this._apply({ [key]: item.value } as Partial<Options>),
+          [item.value],
         ),
       );
     };
@@ -908,7 +1057,8 @@ export class EnergieflussEditor extends LitElement {
       if (sg.solar_strings) {
         const v = sg.solar_strings.value;
         const done = v.every((e) => (d.solar_strings ?? []).includes(e));
-        rows.push(this._suggestRow("PV-Leistung", names(v), sg.solar_strings.source, done, () => this._apply({ solar_strings: v })));
+        const apply = () => this._apply({ solar_strings: v });
+        rows.push(this._suggestRow("PV-Leistung", names(v), sg.solar_strings.source, done, apply, v));
       }
       scalar("solar_today", "PV-Ertrag heute");
       scalar("solar_forecast_remaining", "PV-Prognose Rest heute");
@@ -922,7 +1072,7 @@ export class EnergieflussEditor extends LitElement {
           g.grid_mode === "split"
             ? `Bezug: ${this._name(g.grid_import_power!)} · Einspeisung: ${this._name(g.grid_export_power!)}`
             : names(ids);
-        rows.push(this._suggestRow("Netz", text, sg.grid.source, done, () => this._apply(g)));
+        rows.push(this._suggestRow("Netz", text, sg.grid.source, done, () => this._apply(g), ids));
       }
       scalar("grid_import_today", "Bezug heute");
       scalar("grid_export_today", "Einspeisung heute");
@@ -944,6 +1094,7 @@ export class EnergieflussEditor extends LitElement {
             b.source,
             this._hasBattery(v),
             () => this._applyBattery(v),
+            [v.power, v.charge_power, v.discharge_power, v.soc],
             "Hinzufügen",
           ),
         );
@@ -963,7 +1114,11 @@ export class EnergieflussEditor extends LitElement {
         ? html`<h3>Mögliche Verbraucher</h3>
             ${list.map(
               (l) => html`<div class="sg-row">
-                <div class="sg-text"><span>${l.name}</span><small>${l.source}</small></div>
+                <div class="sg-text">
+                  <span>${this._name(l.entity)}</span>
+                  <small>${this._facts(l.entity, l.source)}</small>
+                  ${this._usedLine(l.entity)}${this._nameChips(l.entity)}
+                </div>
                 <div class="sg-btns">
                   <button @click=${() => this._applyLoad(l.entity, "fixed_loads")}>Grundlast</button>
                   <button @click=${() => this._applyLoad(l.entity, "flexible_loads")}>Zusatzverbraucher</button>
@@ -1144,7 +1299,7 @@ export class EnergieflussEditor extends LitElement {
         () =>
           html`${this._form(LOADS_SCHEMA, d as Record<string, unknown>, (ev) =>
             this._onForm(ev, ["fixed_loads", "flexible_loads", "home_power"]),
-          )}${this._loadsLive()}${this._parentsEditor()}`,
+          )}${this._namesEditor()}${this._loadsLive()}${this._parentsEditor()}`,
         "Alle Verbraucher zählen zum Haus. Grundlast läuft sowieso, Zusatzverbraucher lassen sich zeitlich verschieben.",
       )}
     `;
@@ -1300,6 +1455,62 @@ export class EnergieflussEditor extends LitElement {
     }
     .sg-text small {
       color: var(--secondary-text-color);
+      overflow-wrap: anywhere;
+    }
+    .chips {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px 0;
+    }
+    .chips small,
+    .name-row > small {
+      color: var(--secondary-text-color);
+    }
+    button.chip,
+    .suggest button.chip {
+      padding: 2px 10px;
+      font-size: 12px;
+      text-align: left;
+    }
+    button.chip span {
+      margin-left: 6px;
+      font-weight: 400;
+      opacity: 0.7;
+    }
+    button.chip.on {
+      background: var(--primary-color);
+      color: var(--text-primary-color, #fff);
+    }
+    .names {
+      margin-top: 16px;
+    }
+    .name-row {
+      padding: 8px 0;
+      border-top: 1px solid var(--divider-color);
+      font-size: 13px;
+    }
+    .name-row label {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .name-row label span {
+      flex: 1;
+      min-width: 140px;
+      overflow-wrap: anywhere;
+    }
+    .name-row input {
+      flex: 1;
+      min-width: 140px;
+      font: inherit;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--divider-color);
+      background: var(--card-background-color, transparent);
+      color: var(--primary-text-color);
     }
     .sg-done {
       color: var(--success-color, #43a047);

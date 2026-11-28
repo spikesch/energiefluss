@@ -21,6 +21,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from .calc import Result
 from .const import (
     CONF_BATTERY_NAME,
+    CONF_LOAD_NAMES,
     DOMAIN,
     ENERGY_TOTALS,
     PERIOD_ROLLING,
@@ -139,13 +140,14 @@ async def async_setup_entry(
         if name in totals
     ]
     reg = er.async_get(hass)
+    own_names = hub.config.get(CONF_LOAD_NAMES) or {}
     entities += [
         EfEnergySensor(
             hub,
             e,
             load_today_unique_id(hub.entry.entry_id, e),
             "load",
-            {"name": _friendly(hass, reg, e)},
+            {"name": own_names.get(e) or _friendly(hass, reg, e)},
         )
         for e in hub.loads()
     ]

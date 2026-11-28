@@ -41,6 +41,7 @@ from .const import (
     CONF_GRID_POWER,
     CONF_GRID_PRICE,
     CONF_HOME_POWER,
+    CONF_LOAD_NAMES,
     CONF_LOAD_PARENTS,
     CONF_SOLAR_FORECAST,
     CONF_SOLAR_STRINGS,
@@ -100,6 +101,7 @@ OPTIONS_SCHEMA = vol.Schema(
         vol.Optional(CONF_FIXED_LOADS): _ENTITIES,
         vol.Optional(CONF_FLEXIBLE_LOADS): _ENTITIES,
         vol.Optional(CONF_LOAD_PARENTS): vol.Any(None, {cv.entity_id: cv.entity_id}),
+        vol.Optional(CONF_LOAD_NAMES): vol.Any(None, {cv.entity_id: vol.Any(None, str)}),
         vol.Optional(CONF_WALLBOX_NAME): vol.Any(None, str),
         vol.Optional(CONF_WALLBOX_POWER): _ENTITY,
         vol.Optional(CONF_WALLBOX_SOC): _ENTITY,
@@ -147,6 +149,12 @@ def normalize_options(raw: dict[str, Any]) -> dict[str, Any]:
             raise vol.Invalid("Ein Verbraucher kann nicht in sich selbst enthalten sein.")
         if parent in parents:
             raise vol.Invalid("Enthaltene Verbraucher können nicht selbst weitere enthalten.")
+    # own names only for sensors that are (still) set up as a load
+    loads = {*data.get(CONF_FIXED_LOADS, []), *data.get(CONF_FLEXIBLE_LOADS, [])}
+    loads.update(e for b in batteries for e in b.get(CONF_BACKUP_LOADS) or [])
+    names = {e: n.strip() for e, n in (data.pop(CONF_LOAD_NAMES, None) or {}).items() if e in loads and (n or "").strip()}
+    if names:
+        data[CONF_LOAD_NAMES] = names
     return _clean(data) | {
         CONF_GRID_INVERT: data[CONF_GRID_INVERT],
         CONF_GRID_MODE: data[CONF_GRID_MODE],

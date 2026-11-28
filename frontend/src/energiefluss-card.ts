@@ -108,6 +108,7 @@ interface Layout {
   };
   wallbox?: { name: string; power: string; soc: string | null; today: string | null; flexible: boolean } | null;
   loads: { fixed: Load[]; flexible: Load[] };
+  names?: Record<string, string>; // own names of loads
 }
 
 /** Visual rows of a load list: every load plus the loads contained in it. */
@@ -249,6 +250,8 @@ export class EnergieflussCard extends LitElement {
     return num(this._s(this._layout?.entities[key]));
   }
   protected _name(id: string): string {
+    const own = this._layout?.names?.[id];
+    if (own) return own;
     const s = this._s(id);
     return (s?.attributes.friendly_name as string | undefined) ?? id.split(".")[1];
   }

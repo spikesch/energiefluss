@@ -246,7 +246,10 @@ def ws_get_config(
         if e.state is ConfigEntryState.LOADED
     ]
     instances = [{"entry_id": e.entry_id, "title": e.title} for e in entries]
-    if wanted := msg.get("entry_id"):
+    # a card keeps the instance it was saved with; if that one is gone (the
+    # integration was removed and added again) it shows the first instance
+    # instead of an error, so cards on dashboards keep working
+    if (wanted := msg.get("entry_id")) and any(e.entry_id == wanted for e in entries):
         entries = [e for e in entries if e.entry_id == wanted]
     if not entries:
         connection.send_error(msg["id"], "not_found", "Keine Wattrio-Instanz gefunden")

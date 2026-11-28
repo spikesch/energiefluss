@@ -2,6 +2,16 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.6.3
+
+**Deutsch**
+
+- Karten auf eigenen Dashboards laufen weiter, auch wenn die Integration entfernt und neu hinzugefügt wurde: Gibt es die gespeicherte Anlage nicht mehr, zeigt die Karte die erste vorhandene statt „Keine Wattrio-Instanz gefunden“.
+
+**English**
+
+- Cards on your own dashboards keep working even after the integration was removed and added again: if the saved system no longer exists, the card shows the first one instead of "Keine Wattrio-Instanz gefunden" (no instance found).
+
 ## 0.6.2
 
 **Deutsch**

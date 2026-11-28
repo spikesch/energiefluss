@@ -1220,7 +1220,7 @@ export class EnergieflussCard extends LitElement {
 
   /** Colour of the current price: buying (pale red) or selling (pale green). */
   protected _priceColour(exporting: boolean): string {
-    return exporting ? "#6fae7c" : "#c9706b";
+    return exporting ? "#4e9e62" : "#cc5a52";
   }
 
   /** Current grid values: power, direction, price and today's import / export. */

@@ -39,6 +39,7 @@ SIMS = [
     ("load_klima1", "Klima1", 0, 1500, 5, "W", 2, "power", "load"),
     ("load_klima3", "Klima3", 0, 2500, 5, "W", 894, "power", "load"),
     ("load_kuehlschrank", "Kühlschrank Küche Keller", 0, 300, 5, "W", 80, "power", "load"),
+    ("load_server", "Server / IT", 0, 1500, 5, "W", 180, "power", "load"),
     ("load_buero", "Büro (kW)", 0, 2, 0.01, "kW", 0.15, "power", "load"),
     ("aux_trockner", "Trockner", 0, 3000, 10, "W", 0, "power", "load"),
     ("aux_waschmaschine", "Waschmaschine Shelly Plug S", 0, 2500, 10, "W", 0, "power", "load"),

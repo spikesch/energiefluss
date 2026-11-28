@@ -2,6 +2,20 @@
 
 *Jede Version auf Deutsch und Englisch. / Every version in German and English.*
 
+## 0.6.4
+
+**Deutsch**
+
+- Glas-Karte: Kugeln und Tropfen in gedeckteren Farben – weniger gesättigt, etwas dunkler, schwächerer Leuchtschein und Glanzpunkt. Die Herkunftsfarben bleiben gut zu unterscheiden, es wirkt aber ruhiger.
+- Preis am Netzmast etwas kräftiger (Glas und Klassik), weiterhin dezent.
+- Neue Screenshots: Kühlschrank und Server / IT am Notstrom.
+
+**English**
+
+- Glass card: balls and blobs in more muted colours – less saturated, a little darker, softer glow and sheen. The source colours stay easy to tell apart, but it looks calmer.
+- Price at the grid pylon a little stronger (glass and classic), still subtle.
+- New screenshots: fridge and server / IT on backup power.
+
 ## 0.6.3
 
 **Deutsch**

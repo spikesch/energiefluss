@@ -48,6 +48,21 @@ const GLASS = {
 
 const RIM = "#cfeaff"; // bright glass edge
 
+/** Balls and blobs in a muted tone of their colour: less saturated and a little
+ *  darker, so the flow looks calm instead of fairground-bright. */
+const BALL_SATURATION = 0.72;
+const BALL_BRIGHTNESS = 0.93;
+const BALL_GLOW = 0.6; // share of the full halo
+function muted(colour: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(colour);
+  if (!m) return colour;
+  const n = parseInt(m[1], 16);
+  const rgb = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const luma = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  const out = rgb.map((c) => Math.round(Math.min(255, Math.max(0, (luma + BALL_SATURATION * (c - luma)) * BALL_BRIGHTNESS))));
+  return `#${out.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
 type Seg = [number, number, number, number];
 
 /** A ball running into a blob: when (s, repeating every period) and how big. */
@@ -500,9 +515,9 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       </radialGradient>
       ${Object.entries(c).map(
         ([k, v]) => svg`<radialGradient id=${`ef-halo-${k}`}>
-          <stop offset="0" stop-color=${v} stop-opacity="0.55" />
-          <stop offset="0.45" stop-color=${v} stop-opacity="0.18" />
-          <stop offset="1" stop-color=${v} stop-opacity="0" />
+          <stop offset="0" stop-color=${muted(v)} stop-opacity=${0.55 * BALL_GLOW} />
+          <stop offset="0.45" stop-color=${muted(v)} stop-opacity=${0.18 * BALL_GLOW} />
+          <stop offset="1" stop-color=${muted(v)} stop-opacity="0" />
         </radialGradient>`,
       )}
     </defs>`;
@@ -653,9 +668,9 @@ export class EnergieflussGlassCard extends EnergieflussCard {
         calcMode="spline" keyTimes="0;0.33;0.66;1" keySplines=${"0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"}
         values=${a.map((f) => (R * f).toFixed(2)).join(";")} />`;
     };
-    return svg`<g>
-      <circle cx=${x} cy=${y} r=${R * 2.6} fill=${key ? `url(#ef-halo-${key})` : colour} fill-opacity=${key ? nothing : 0.2} />
-      <ellipse cx=${x} cy=${y} rx=${R} ry=${R} fill=${colour}>
+    return svg`<g class="orb blob">
+      <circle class="halo" cx=${x} cy=${y} r=${R * 2.6} fill=${key ? `url(#ef-halo-${key})` : muted(colour)} fill-opacity=${key ? nothing : 0.2 * BALL_GLOW} />
+      <ellipse class="body" cx=${x} cy=${y} rx=${R} ry=${R} fill=${muted(colour)}>
         ${wobble("rx", 1.7, 0)}${wobble("ry", 1.7, 0)}
         ${hits.map((h) => svg`${bump(h, "rx")}${bump(h, "ry")}`)}
       </ellipse>
@@ -663,7 +678,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
         ${wobble("rx", 1.7, 0)}${wobble("ry", 1.7, 0)}
         ${hits.map((h) => svg`${bump(h, "rx")}${bump(h, "ry")}`)}
       </ellipse>
-      <ellipse cx=${x - R * 0.32} cy=${y - R * 0.38} rx=${R * 0.4} ry=${R * 0.24} fill="#ffffff" fill-opacity="0.85" />
+      <ellipse class="sheen" cx=${x - R * 0.32} cy=${y - R * 0.38} rx=${R * 0.4} ry=${R * 0.24} fill="#ffffff" fill-opacity="0.6" />
     </g>`;
   }
 
@@ -676,12 +691,12 @@ export class EnergieflussGlassCard extends EnergieflussCard {
   protected _orb(radius: number, colour: string, motion: SVGTemplateResult, hidden = false): SVGTemplateResult {
     const r = radius;
     const key = Object.entries(this._c).find(([, v]) => v === colour)?.[0];
-    return svg`<g opacity=${hidden ? "0" : nothing}>
+    return svg`<g class="orb" opacity=${hidden ? "0" : nothing}>
       ${motion}
-      <circle r=${r * 2.8} fill=${key ? `url(#ef-halo-${key})` : colour} fill-opacity=${key ? nothing : 0.18} />
-      <circle r=${r} fill=${colour} />
+      <circle class="halo" r=${r * 2.8} fill=${key ? `url(#ef-halo-${key})` : muted(colour)} fill-opacity=${key ? nothing : 0.18 * BALL_GLOW} />
+      <circle class="body" r=${r} fill=${muted(colour)} />
       <circle r=${r} fill="url(#ef-ball)" />
-      <circle cx=${-0.3 * r} cy=${-0.35 * r} r=${r * 0.38} fill="#ffffff" fill-opacity="0.85" />
+      <circle class="sheen" cx=${-0.3 * r} cy=${-0.35 * r} r=${r * 0.38} fill="#ffffff" fill-opacity="0.6" />
     </g>`;
   }
 
@@ -1037,7 +1052,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
    */
   // pale on the dark glass: present, but not loud
   protected _priceColour(exporting: boolean): string {
-    return exporting ? "#a6dcb2" : "#eea6a2";
+    return exporting ? "#86d69a" : "#f08a84";
   }
 
   protected _grid(): SVGTemplateResult {
@@ -1069,7 +1084,7 @@ export class EnergieflussGlassCard extends EnergieflussCard {
       <text x=${TILE_X + TILE_W / 2} y=${y + 11} text-anchor="middle" class="val" font-size=${this._fs(11.5)} font-weight="600"
         >${power}</text>
       ${cents !== null
-        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" fill=${this._priceColour(exporting)} fill-opacity="0.85"
+        ? svg`<text x=${TILE_X + TILE_W / 2} y=${y + 19.5} text-anchor="middle" class="price" fill=${this._priceColour(exporting)}
             style=${`font-size:${this._fs(8.5)}px`}>${price}</text>`
         : nothing}
       ${rows.length
